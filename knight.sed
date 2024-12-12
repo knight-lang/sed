@@ -2,6 +2,9 @@
 # Separators that're in use:
 ##
 
+## NOTE: All `ASSERTIONS:` can be completely removed and the program should stay the same.
+# That means that things shouldnt rely on the `s//` from them.
+
 :accumulate-program
 	/^__END__$/!{
 		H;n;baccumulate-program
@@ -48,7 +51,7 @@
 :bug
 	s/^/BUG: /;P
 	s/\n/__TMP_BUG__/1
-	s/.*/__TMP_BUG__/
+	s/.*__TMP_BUG__//
 	# FALLTHRU
 :dbg
 	i\
@@ -56,7 +59,7 @@
 	l;x
 	i\
 ===[debug]=== hold space:
-	l;q;bdbg
+	l;q
 
 :run-start
 	/^  [^f]/q ; # If the first thing parsed isn't a function, just stop
@@ -70,43 +73,44 @@
 # update the pattern space to be the next thing to execute. This expects the pattern space to be
 # the stack, and the hold space to be the execution (as the first thing it does is swap.)
 :next
-	x; # Swap the value stack back
+ 	# Swap the value stack back
+	x
 
-	# Ensure the current execution is actually finished
-	/[^0a-z ]C/!{s/^/next when not done with a function\n/;bbug
+	## ASSERTION: Ensure the current execution is actually finished
+	/[^0a-z ]C/{s/^/next when not done with a function\n/;bbug
 	}
-	s//  /; # Delete the current
 
-	s/[0a-z ]C/  /; # Delete the current and its iteration
+	# Delete the iteration and the `CURRENT` marker.
+	s/[0a-z ]C/  /
+
+	# Check to see if there's a previous thing to run. If not, we're at end of program.
+	/(.*[0-9])_/!{s/.*/<END OF PROGRAM>/p;q;}
+
+	# Mark the previous thing as the next thing to run.
+	s//\1C/
+
+	## ASSERTION: Make sure the arity is between 1 to 4.
+	/[1-4]C/!{s/^/arity isnt the right size\n/;bbug
+	}
 
 	# Reset branch condition
-	s/^$//;#l
-		;tnext.0
+	s/^$//;tnext.0
 	:next.0
 
-	# Replace the previousmost with the current
-	s/(.*[0-9])_/\1C/;trun.reduce-arity
-
-	# End of program encountered,
-	i\
-<END OF PROGRAM>
-	q
-
-	:run.reduce-arity
+	# Reduce the arity by one. The `run.function.zero-arity` is an optimization, and not technically
+	# required.
 	s/1C/0C/;trun.function.zero-arity
 	s/2C/1C/;trun
 	s/3C/2C/;trun
-	s/4C/3C/;trun
+	s/4C/3C/
+	# FALLTHRU
 
-
-	s/^/arity isnt the right size\n/;bbug
+# EXECUTE A VALUE
 :run
-	s/^$//;trun.0
-	:run.0
-	#l
 
-	# Execute strings and integers by just pushing them on the stack/
-	/ C([is][^|]*\|)/{
+	##
+	# Execute strings and integers by just pushing them on the stack
+	/C([is][^|]*\|)/{
 		# Push onto the stack
 		# TODO: should this go on the back, or front like we have? if so, modify const fns
 		H;x;s/(.*)\n(.* C)([is][^|]*).*/\3|\1/
@@ -120,6 +124,9 @@
 
 	# If the current function doesn't have its arity set, the set the arity.
 	/ (Cf.)/{
+		s/^$//;trun.1
+		:run.1
+
 		 # TODO: handle `|` function when we are done
 		s/ (Cf[TFNPR@])/0\1/;trun.function.zero-arity
 		s/ (Cf[][BCQDOL!~A,])/1\1/;trun.function.nonzero-arity
@@ -151,7 +158,7 @@
 	s/.*0C.(.)/todo: function \1/p;q
 
 	:run.function.zero-arity
-	/[^0a-z]C/{s/^/went to run.function.zero-arity with a nonzero-arity function/;bbug
+	/[^0a-z]C/{s/^/went to run.function.zero-arity with a nonzero-arity function\n/;bbug
 	}
 
 ################################################################################
