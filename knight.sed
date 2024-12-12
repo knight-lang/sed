@@ -144,12 +144,19 @@
 		BUG: shoudlnt get here
 	bdbg
 
+	:run.todo
+	s/.*0C.(.)/todo: function \1/p;q
+
 	:run.function.zero-arity
 	/[^0a-z]C/{
 		i\
 			BUG: went to run.function.zero-arity with a nonzero-arity function.
 		bbug
 	}
+
+################################################################################
+#                                   Arity 0                                    #
+################################################################################
 
 	# Keyword literals
 	/0CfT/{ x;s/^/T|/;bnext
@@ -159,23 +166,43 @@
 	/0CfN/{ x;s/^/N|/;bnext
 	}
 
+	## PROMPT
+	/0CfP/brun.todo
 
-	## ARITY 1
+	## RANDOM
+	/0CfR/brun.todo
 
+################################################################################
+#                                   Arity 1                                    #
+################################################################################
+	# No `B`, it's handled elsewhere
+
+	## CALL
+	/0CfC/brun.todo
+
+	## QUIT
 	/0CfQ/{s//aCfQ/;x;bto_integer
 	}
 	/aCfQ/{x;s/^([0-9]*).*/<exit with status \1>\n/p;q;}
 
-	# `~`: Negate an argument
-	/0Cf~/{s//aCf~/;x;bto_integer
+	## DUMP
+	/0CfD/brun.todo
+
+	## OUTPUT
+	/0CfO/{s//aCfO/;x;bto_string
 	}
-	/aCf~/{x
-		s/^/i-/
-		s/^i--/i/
-		s/^i-0\|/i0/
+	/aCfO/{x;
+		# TODO: `\` at the end of the line
+		s/\|/\n/1
+		P;
+		s/.*\n/N|/; # Delete the current line from the stack, replacing with null
 		bnext
 	}
 
+	## LENGTH
+	/0CfL/brun.todo
+
+	## !
 	/0Cf!/{s//aCf!/;x;bto_boolean
 	}
 	/aCf!/{x
@@ -185,19 +212,27 @@
 		bnext
 	}
 
-	/0CfO/{s//aCfO/;x;bto_string
+	## ~
+	/0Cf~/{s//aCf~/;x;bto_integer
 	}
-	/aCfO/{x;
-		# TODO: `\` at end of line
-
-		# TODO: `\` at the end of the line
-		s/\|/\n/1
-		P;
-		s/.*\n/N|/; # Delete the current line from the stack, replacing with null
+	/aCf~/{x
+		s/^/i-/
+		s/^i--/i/
+		s/^i-0\|/i0/
 		bnext
 	}
 
-	## ARITY 2
+	## ASCII
+	/0CfA/brun.todo
+
+	## , [ and ]
+	/0Cf[][,]/brun.todo
+
+################################################################################
+#                                   Arity 2                                    #
+################################################################################
+
+	## +
 	/0Cf\+/{x
 		/^[^|]*\|s/{x;s/0Cf\+/sCf+/;x;bto_string
 		}
@@ -216,6 +251,7 @@
 		# FALLTHRU
 	}
 
+	## -
 	/0Cf-/{s//iCf-/;x;bto_integer
 	}
 	/iCf-/{s//bCf-/;x;
@@ -230,7 +266,15 @@
 		bsubtract
 	}
 
+	## *, /, %, ^, <, >
+	/0Cf[*/%^<>]/brun.todo
 
+	## ?
+	/0Cf\?/brun.todo
+
+	# (& and | are handled earlier)
+
+	## ;
 	/0Cf;/{x
 		s/\|/__TMP__/1
 		s/\|/__TMP__/1
@@ -238,10 +282,38 @@
 		bnext
 	}
 
+	# (WHILE is handled earlier)
+
+################################################################################
+#                                   Arity 3                                    #
+################################################################################
+
+	# (IF is handled earlier)
+
+	## GET
+	/0CfG/brun.todo
+
+################################################################################
+#                                   Arity 4                                    #
+################################################################################
+
+	## SET
+	/0CfS/brun.todo
+
+## EVERYTHING ELSE IS A BUG ##
 	s/.*0Cf(.).*/unknown function: \1/p
 	q
 
+####################################################################################################
+#                                                                                                  #
+#                                           conversions                                            #
+#                                                                                                  #
+####################################################################################################
 
+:to_array
+	i\
+	todo: to_array
+	q
 
 :to_string
 	/^a/bdbg
@@ -280,6 +352,12 @@
 	}
 	x
 	brun.function.zero-arity
+
+####################################################################################################
+#                                                                                                  #
+#                                            Operators                                             #
+#                                                                                                  #
+####################################################################################################
 
 #:tally-to-digit
 #	s/IIIIIIIIII/x/g
