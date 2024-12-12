@@ -1,0 +1,47 @@
+| xW|  +|  i1|  va  |  ;|  =|  v1|  ~|  i1|  O|  vi :
+|2_W| x+|  i1|  va  |  ;|  =|  v1|  ~|  i1|  O|  vi :
+|2_W|2_+| xi1|  va  |  ;|  =|  v1|  ~|  i1|  O|  vi : i1
+|2_W|1x+|  i1| yva  |  ;|  =|  v1|  ~|  i1|  O|  vi : i1
+|2_W|1_+|  i1| xva  |  ;|  =|  v1|  ~|  i1|  O|  vi : i1 a
+|2_W|0x+|  i1|  va  | y;|  =|  v1|  ~|  i1|  O|  vi : i1 + a
+|1xW|  +|  i1|  va  | y;|  =|  v1|  ~|  i1|  O|  vi :
+|1_W|  +|  i1|  va  | x;|  =|  v1|  ~|  i1|  O|  vi :
+|1_W|  +|  i1|  va  |2_;| x=|  v1|  ~|  i1|  O|  vi :
+|1_W|  +|  i1|  va  |2_;|1_=|  v1| x~|  i1|  O|  vi :
+|1_W|  +|  i1|  va  |2_;|1_=|  v1|1_~| xi1|  O|  vi : i1
+|1_W|  +|  i1|  va  |2_;|1_=|  v1|0x~|  i1| yO|  vi : i-1
+|1_W|  +|  i1|  va  |2_;|0x=|  v1|  ~|  i1| yO|  vi : i-1
+|1_W|  +|  i1|  va  |1x;|  =|  v1|  ~|  i1| yO|  vi :
+|1_W|  +|  i1|  va  |1_;|  =|  v1|  ~|  i1| xO|  vi :
+|1_W|  +|  i1|  va  |1_;|  =|  v1|  ~|  i1|1_O| xvi : i
+|1_W|  +|  i1|  va  |1_;|  =|  v1|  ~|  i1|0xO|  vi : N
+|0xW|  +|  i1|  va  |1_;|  =|  v1|  ~|  i1|  O|  vi : N
+
+
+
+##### = foo 1
+# WHILE (+ 1 foo)
+#  ; = foo ~1
+#  : OUTPUT foo
+#
+# W | + | 1 | foo | ; | = | foo | ~ | 1 | O | foo
+
+ cW |  n+ |    1  |   foo  |    ;  |    =  |  foo  |    ~  |   1  |   O   |  foo :
+2_W |  c+ |   n1  |   foo  |    ;  |    =  |  foo  |    ~  |   1  |   O   |  foo :
+2_W | 2_+ |   c1  |  nfoo  |    ;  |    =  |  foo  |    ~  |   1  |   O   |  foo : 1
+2_W | 1c+ |    1  |  nfoo  |    ;  |    =  |  foo  |    ~  |   1  |   O   |  foo : 1
+2_W | 1_+ |    1  |  cfoo  |   n;  |    =  |  foo  |    ~  |   1  |   O   |  foo : 1 foo
+2_W | 0c+ |    1  |   foo  |   n;  |    =  |  foo  |    ~  |   1  |   O   |  foo : 1 + foo
+1cW |   + |    1  |   foo  |   n;  |    =  |  foo  |    ~  |   1  |   O   |  foo :
+1_W |   + |    1  |   foo  |   c;  |   n=  |  foo  |    ~  |   1  |   O   |  foo :
+1_W |   + |    1  |   foo  |  2_;  |   c=  |  foo  |   n~  |   1  |   O   |  foo :
+1_W |   + |    1  |   foo  |  2_;  |  1_=  |  foo  |   c~  |  n1  |   O   |  foo :
+1_W |   + |    1  |   foo  |  2_;  |  1_=  |  foo  |  1_~  |  c1  |  nO   |  foo : 1
+1_W |   + |    1  |   foo  |  2_;  |  1_=  |  foo  |  0c~  |   1  |  nO   |  foo : -1
+1_W |   + |    1  |   foo  |  2_;  |  0c=  |  foo  |    ~  |   1  |  nO   |  foo : -1
+1_W |   + |    1  |   foo  |  1c;  |    =  |  foo  |    ~  |   1  |  nO   |  foo :
+1_W |   + |    1  |   foo  |  1_;  |    =  |  foo  |    ~  |   1  |  cO   |  foo :
+1_W |   + |    1  |   foo  |  1_;  |    =  |  foo  |    ~  |   1  | 1_O   | cfoo : -1
+1_W |   + |    1  |   foo  |  1_;  |    =  |  foo  |    ~  |   1  | 0cO   |  foo : N
+1_W |   + |    1  |   foo  |  0c;  |    =  |  foo  |    ~  |   1  |   O   |  foo : N
+0cW |   + |    1  |   foo  |  1_;  |    =  |  foo  |    ~  |   1  |   O   |  foo : N

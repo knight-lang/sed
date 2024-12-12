@@ -1,0 +1,59 @@
+:top
+	1{x;n;}
+	/^__END__$/!{H;n;btop
+	}
+	s/.*//
+	x
+	bparse
+
+:run
+	l;q
+
+:found
+	G
+	s/\n/N/g
+	s/NN/N/
+	s/^(.)([^N]*)N\2/\1\2/
+	l
+	q
+
+:parse
+	# Delete leading whitespace and comments
+	s/^[[:space:]]*//
+	:parse.comments
+		s/$.//;tparse.comments.1
+		:parse.comments.1
+		s/^#\n//;tparse
+		s/^#./#/;tparse.comments
+
+	s/^$//;tparse.1
+	:parse.1
+	s/^$//;tparse.end
+
+	# Now leading whitespace and comments are gone
+	s/^[0-9]+/i&\x01\x02/;tparse.append
+	s/^[a-z_0-9]+/v&\x01\x02/;tparse.append
+	s/^'([^']*)'/s&\x01\x02/;tparse.append-single-quote-str
+	s/^"([^"]*)"/s&\x01\x02/;tparse.append-double-quote-str
+
+	# Everything else is invalid
+	s/^(.).*/unknown token start: \1/p;q
+
+	:parse.append-single-quote-str
+	:parse.append-double-quote-str
+		# TODO: replace newlines in string with an escape
+	:parse.append
+		H;x;s/\x02.*//;x;s/.*\x02//;bparse
+
+	l;q
+
+	#x;s/.*//;x
+	H
+	#s/^\([0-9]\{1,\}\).*/i\1/;tfound
+	l
+	t found
+	q
+
+	brun
+	:parse.end
+	x;l;q
