@@ -1,3 +1,7 @@
+###
+# Separators that're in use:
+##
+
 :accumulate-program
 	/^__END__$/!{
 		H;n;baccumulate-program
@@ -42,6 +46,10 @@
 		bparse
 
 :bug
+	s/^/BUG: /;P
+	s/\n/__TMP_BUG__/1
+	s/.*/__TMP_BUG__/
+	# FALLTHRU
 :dbg
 	i\
 ===[debug]=== pattern space:
@@ -58,21 +66,23 @@
 	brun
 
 
+## After finishing the execution of a function (and possibly pushing its value onto the stack),
+# update the pattern space to be the next thing to execute. This expects the pattern space to be
+# the stack, and the hold space to be the execution (as the first thing it does is swap.)
 :next
 	x; # Swap the value stack back
-:run.go-to-previous-function
-	/[^0a-z]Cf/{
-		i\
-			BUG: go-to-previous-function when not done with a function
-		bbug
+
+	# Ensure the current execution is actually finished
+	/[^0a-z ]C/!{s/^/next when not done with a function\n/;bbug
 	}
+	s//  /; # Delete the current
 
 	s/[0a-z ]C/  /; # Delete the current and its iteration
 
 	# Reset branch condition
 	s/^$//;#l
-		;trun.go-to-previous-function.0
-	:run.go-to-previous-function.0
+		;tnext.0
+	:next.0
 
 	# Replace the previousmost with the current
 	s/(.*[0-9])_/\1C/;trun.reduce-arity
@@ -88,9 +98,8 @@
 	s/3C/2C/;trun
 	s/4C/3C/;trun
 
-	i\
-		BUG: arity isnt the right size
-	bbug
+
+	s/^/arity isnt the right size\n/;bbug
 :run
 	s/^$//;trun.0
 	:run.0
@@ -100,16 +109,13 @@
 	/ C([is][^|]*\|)/{
 		# Push onto the stack
 		# TODO: should this go on the back, or front like we have? if so, modify const fns
-		H;x;s/(.*)\n(.* C)([is][^|]*).*/\3|\1/;x
+		H;x;s/(.*)\n(.* C)([is][^|]*).*/\3|\1/
 		# Move back to the previous reference
-		brun.go-to-previous-function
+		bnext
 	}
 
 	# If the current value doesn't start with a space, then it must be a function.
-	/[^ ]C[^f]/{
-		i\
-		BUG: CURRENT value is a non-function with args
-		bdbg
+	/[^ ]C[^f]/{s/^/CURRENT value is a non-function with args\n/;bbug
 	}
 
 	# If the current function doesn't have its arity set, the set the arity.
@@ -120,9 +126,8 @@
 		s_ (Cf[-+*/%<>?&;=W])_2\1_;trun.function.nonzero-arity
 		s/ (Cf[IG])/3\1/;trun.function.nonzero-arity
 		s_ (CfS)_4\1_;trun.function.nonzero-arity
-		i\
-		BUG: unknown function encountered
-		bbug
+
+		s/^/unknown function encountered/;bbug
 	}
 
 	:run.function.nonzero-arity
@@ -140,18 +145,13 @@
 		brun
 	}
 
-	i\
-		BUG: shoudlnt get here
-	bdbg
+	s/^/shouldn't get here/;bbug
 
 	:run.todo
 	s/.*0C.(.)/todo: function \1/p;q
 
 	:run.function.zero-arity
-	/[^0a-z]C/{
-		i\
-			BUG: went to run.function.zero-arity with a nonzero-arity function.
-		bbug
+	/[^0a-z]C/{s/^/went to run.function.zero-arity with a nonzero-arity function/;bbug
 	}
 
 ################################################################################
@@ -186,7 +186,16 @@
 	/aCfQ/{x;s/^([0-9]*).*/<exit with status \1>\n/p;q;}
 
 	## DUMP
-	/0CfD/brun.todo
+	/0CfD/{x;H
+		/^N\|.*/{
+			#s//null/p
+			x;s/.*//
+			x;s/.*//;p
+			q
+			bdbg
+		}
+		bdbg
+	}
 
 	## OUTPUT
 	/0CfO/{s//aCfO/;x;bto_string
@@ -314,6 +323,7 @@
 	i\
 	todo: to_array
 	q
+	bto_array
 
 :to_string
 	/^a/bdbg
@@ -328,10 +338,7 @@
 	/^a/bdbg
 	s/^([sN]|i0)\|/F|/
 	s/^[is][^|]*/T/
-	/^[TF]/!{
-		i\
-			BUG: somehow to_boolean failed
-		bdbg
+	/^[TF]/!{s/^/somehow to_boolean failed/;bbug
 	}
 	x
 	brun.function.zero-arity
