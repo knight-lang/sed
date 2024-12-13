@@ -127,7 +127,8 @@ bug
 	s/[0a-z ]C/  /
 
 	# Check to see if there's a previous thing to run. If not, we're at end of program.
-	/(.*[0-9])_/!{s/.*/<END OF PROGRAM>/p;q;}
+	#/(.*[0-9])_/!{s/.*/<END OF PROGRAM>/p;q;}
+	/(.*[0-9])_/!q
 
 	# Mark the previous thing as the next thing to run.
 	s//\1C/
@@ -315,8 +316,8 @@ bug
 		:run.dump.0
 
 		s/^N.*/null/;trun.dump.done
-		s/^T.*/null/;trun.dump.done
-		s/^F.*/null/;trun.dump.done
+		s/^T.*/true/;trun.dump.done
+		s/^F.*/false/;trun.dump.done
 		s/^i([0-9]+).*/\1/;trun.dump.done
 
 		## ASSERTION: Make sure it's a string
