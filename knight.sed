@@ -156,15 +156,35 @@
 	# Special cases for functions with non-zero arity
 	:run.function.nonzero-arity
 
-	/1Cf&/{
-		bdbg
-		q
+	## &
+	/1Cf&/{s//aCf\&/;x
+		s/^[^|]*/&|&/
+		bto_boolean
 	}
+	/aCf&/{x
+		/^T\|/{
+			s///; # DELETE The `T`
+			s/^[^|]*\|//; # Delete the first argument to `&`
+			x; # go back to the instruction stack
+			# unconditionally just jump to the next value as if `&` never existed
+			s/aC(f.[^N]*)N([^|]*\| ) /  \1C\2N/;
+			brun
+		}
+		bdbg
+	}
+
 	# Functions which dont always execute their args
 	/1Cf[W&|B=]|2CfI/{
 		i\
 			TODO: deferred evaluation function
 		q
+	}
+
+	# ; -- delete the first argument from the stack after evaluating it, it's not needed.
+	/1Cf;/{x
+		s/^[^|]*\|// ;# Delete the topmost element on the stack
+		x
+		# FALLTHRU
 	}
 
 	## Functions which always execute their args: Execute their arguments.
@@ -311,10 +331,9 @@
 	# (& and | are handled earlier)
 
 	## ;
-	/0Cf;/{x
-		s/\|/__TMP__/1
-		s/\|/__TMP__/1
-		s/(.*)__TMP__.*__TMP__/\1|/; # delete the second argument
+	/0Cf;/{x;
+		# DO NOTHING, as we've already executed the first argument. TODO: can this be optimized out,
+		# and we never actually reach this?
 		bnext
 	}
 
@@ -368,7 +387,7 @@
 	/^[TF]/!{s/^/somehow to_boolean failed/;bbug
 	}
 	x
-	brun.function.zero-arity
+	brun
 
 :to_integer
 	/^a/bdbg
