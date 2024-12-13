@@ -1,5 +1,4 @@
 ###
-# Separators that're in use:
 ##
 
 ## NOTE: All `ASSERTIONS:` can be completely removed and the program should stay the same.
@@ -7,7 +6,6 @@
 
 #1{=;s/^/;/;}
 
-baccumulate-program
 :parse-program
 	/^__END__$/{
 		s///; # Delete `__END__`
@@ -19,47 +17,43 @@ baccumulate-program
 	}
 
 	# Delete leading whitespace characters
-	s/^[[:space:]:()]+//
-	/^#/d; # Delete the rest of the line if it's a comment
-	/^$/d; # Delete an empty line
+	s/^[[:space:]:()]+// ;# Delete leading whitespace
+	/^#/d                ;# If the rest of the line is a comment, delete and start parsing again
+	/^$/d                ; # Delete an empty line
 
+	# Parse out strings
+	/^["']/{
+		:keep-looking-quote
+		/^"([^"]*)"|^'([^']*)'/!{  # No quotes found, try again.
+			N; # Add the next input line to the pattern space; the `b` line continues onwards.
+			bkeep-looking-quote
+		}
+		s//  s\1\2\x1F/;# Double quotes were found. Replace the string with its parsed replacement
+		s/\n/_NL_/     ;# Replace any newlines with _NL_ (TODO: make this an ascii control charcater and use `y`)
+		bparse-program.append
+	}
+
+	# Reset the "jump" counter so the `s` below can jump down
 	s/^$//;tparse-program.0
 	:parse-program.0
 
 	# Parse out individual strings
 	s/^[0-9]+/  i&\x1F/;tparse-program.append
 	s/^[a-z_0-9]+/  v&\x1F/;tparse-program.append
-	s/^'([^']*)'/  s\1\x1F/;tparse.append-single-quote-str
-	s/^"([^"]*)"/  s\1\x1F/;tparse.append-double-quote-str
 	s/^([A-Z])[A-Z_]*/  f\1\x1F/;tparse-program.append
 	s/^(.)/  f&\x1F/;tparse-program.append
 
-	i\
-	todo
-	bdbg
+	## ASSERTION: Somehow nothing could be parsed?
+	s/.*/unable to parse out something?/;bug
 
 	:parse-program.append
 		H
 		x;s/^\n//;s/\x1F.*//;y/\n/|/
 		x;s/.*\x1F//
 		bparse-program
-	q
-#	s/^[0-9]+/  i&\x1F/;tparse.append
-#	s/^[a-z_0-9]+/  v&\x1F/;tparse.append
-#	s/^'([^']*)'/  s\1\x1F/;tparse.append-single-quote-str
-#	s/^"([^"]*)"/  s\1\x1F/;tparse.append-double-quote-str
-#	s/^([A-Z])[A-Z_]*/  f\1\x1F/;tparse.append
-#	s/^(.)/  f&\x1F/;tparse.append
-#	bdbg
-#	q
-#	{
-#		s///
-#		# `Q 0` to always quit, the other `0`s are to add stuff to teh end. The `;` is to run to it.
-#		s/^;//
-#		s/$/Q/
-#		q
-#	}
-#
+
+bug
+
 bparse-program
 :accumulate-program
 	/^__END__$/!{
@@ -104,7 +98,8 @@ bparse-program
 		x;s/.*\x1F//
 		bparse
 
-:bug
+# Named `ug` so we can `bug` and branch to bug. lol im silly.
+:ug
 	s/^/BUG: /;P
 	s/\n/__TMP_BUG__/1
 	s/.*__TMP_BUG__//
@@ -134,7 +129,7 @@ bparse-program
 :next_nx
 
 	## ASSERTION: Ensure the current execution is actually finished
-	/[^0a-z ]C/{s/^/next when not done with a function\n/;bbug
+	/[^0a-z ]C/{s/^/next when not done with a function\n/;bug
 	}
 
 	# Delete the iteration and the `CURRENT` marker.
@@ -147,7 +142,7 @@ bparse-program
 	s//\1C/
 
 	## ASSERTION: Make sure the arity is between 1 to 4.
-	/[1-4]C/!{s/^/arity isnt the right size\n/;bbug
+	/[1-4]C/!{s/^/arity isnt the right size\n/;bug
 	}
 
 	# Reset branch condition
@@ -196,7 +191,7 @@ bparse-program
 	#################################################################################################
 
 	## ASSERTION: Ensure the current value is a function now; non-functions are handled before this.
-	/C[^f]/{s/^/CURRENT value is a non-function with args\n/;bbug
+	/C[^f]/{s/^/CURRENT value is a non-function with args\n/;bug
 	}
 
 	# Set the arity of the function if it's not currently set.
@@ -217,7 +212,7 @@ bparse-program
 		s/ (Cf[IG])/3\1/;trun.function.nonzero-arity
 		s/ (CfS)/4\1/;trun.function.nonzero-arity
 
-		s/^/unknown function encountered/;bbug
+		s/^/unknown function encountered/;bug
 	}
 #
 #	# Special cases for functions with non-zero arity
@@ -247,7 +242,7 @@ bparse-program
 		}
 
 		## ASSERTION: `bto_boolean` ever puts T or F on the stack
-		/^F\|/!{s/^/bto_boolean didnt put a T or F on top\n/;bbug
+		/^F\|/!{s/^/bto_boolean didnt put a T or F on top\n/;bug
 		}
 
 		s/^F\|//; # Delete the "false" conditional out
@@ -284,7 +279,7 @@ bparse-program
 		brun
 	}
 
-	s/^/shouldn't get here\n/;bbug
+	s/^/shouldn't get here\n/;bug
 
 	:run.todo
 	s/.*0C.(.).*/todo: function \1/p;q
@@ -293,7 +288,7 @@ bparse-program
 #                                   Arity 0                                    #
 ################################################################################
 	:run.function.zero-arity
-	/[^0a-z]C/{s/^/went to run.function.zero-arity with a nonzero-arity function\n/;bbug
+	/[^0a-z]C/{s/^/went to run.function.zero-arity with a nonzero-arity function\n/;bug
 	}
 
 	# Keyword literals
@@ -339,7 +334,7 @@ bparse-program
 	/0CfO/{s//aCfO/;x;bto_string
 	}
 	/aCfO/{x;
-		# TODO: `\` at the end of the line
+		# TODO: `\` at the end of the line, and convert `_NL_` to newlines
 		s/\|/\n/1
 		P;
 		s/.*\n/N|/; # Delete the current line from the stack, replacing with null
@@ -475,7 +470,7 @@ bparse-program
 	/^a/bdbg
 	s/^([sN]|i0)\|/F|/
 	s/^[is][^|]*/T/
-	/^[TF]/!{s/^/somehow to_boolean failed/;bbug
+	/^[TF]/!{s/^/somehow to_boolean failed/;bug
 	}
 	x
 	brun
