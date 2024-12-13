@@ -54,7 +54,7 @@
 			bparse.string
 		}
 		s//  s\1\2\x1F/;# Double quotes were found. Replace the string with its parsed replacement
-		s/\n/_NL_/     ;# Replace any newlines with _NL_ (TODO: make this an ascii control charcater and use `y`)
+		s/\n/`LF`/     ;# Replace any newlines with `LF` (TODO: make this an ascii control charcater and use `y`)
 		bparse.append
 	}
 
@@ -314,36 +314,37 @@ bug
 		s/^$//;trun.dump.0
 		:run.dump.0
 
-		s/^N.*/null/p;trun.dump.done
-		s/^T.*/null/p;trun.dump.done
-		s/^F.*/null/p;trun.dump.done
-		s/^i([0-9]+).*/\1/p;trun.dump.done
+		s/^N.*/null/;trun.dump.done
+		s/^T.*/null/;trun.dump.done
+		s/^F.*/null/;trun.dump.done
+		s/^i([0-9]+).*/\1/;trun.dump.done
 
-		## ASSERTION: Make sure it's a stirng
+		## ASSERTION: Make sure it's a string
 		/^[^s]/{s/.*/called DUMP on an invalid type/;bug
 		}
 
 		# Strings are special
-		s/^s([^|]).*/\1/
-		s/^[\"]/\\&/g
-		s/^\n/\\n/g
-		s/^\x0D/\\r/g
-		s/^\x09/\\t/g
+		s/^s([^|]*).*/\1/
+		s/[\"]/\\&/g
+		s/`LF`/\\n/g
+		s/\x0D/\\r/g
+		s/\x09/\\t/g
 		s/^/"/;s/$/"/; # Add quotes to the start and end
-		p
 
 		# FALLTHROUGH
 		:run.dump.done
-		bdbg
-		=
-		q
+			p           ;# Print out the current pattern space. (Technically could be on each `s/`)
+			g           ;# Replace the pattern space with `<program>\n<stack>`
+			s/.*\n//    ;# Delete the program from the stack
+			x;s/\n.*//  ;# Delete the stack from the program
+			bnext_nx
 	}
 
 	## OUTPUT
 	/0CfO/{s//aCfO/;x;bto_string
 	}
 	/aCfO/{x;
-		# TODO: `\` at the end of the line, and convert `_NL_` to newlines
+		# TODO: `\` at the end of the line, and convert ``LF`` to newlines
 		s/\|/\n/1
 		P;
 		s/.*\n/N|/; # Delete the current line from the stack, replacing with null
