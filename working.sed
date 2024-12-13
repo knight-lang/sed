@@ -5,61 +5,28 @@
 ## NOTE: All `ASSERTIONS:` can be completely removed and the program should stay the same.
 # That means that things shouldnt rely on the `s//` from them.
 
-#1{=;s/^/;/;}
-
-baccumulate-program
 :parse-program
 	/^__END__$/{
-		s///; # Delete `__END__`
-		x; # Pull the pattern space back in
-		#s/^/  f;|/; # Add `;` to the start: TODO is this needed?
-		#s/$/|  fQ|  i0/; # Add `Q 0` to the end: TODO, is thisneeded?
-		s/$/|  fQ/
-		brun-start
+		i\
+		todo: end
+		bdbg
 	}
 
 	# Delete leading whitespace characters
 	s/^[[:space:]:()]+//
-	/^#/d; # Delete the rest of the line if it's a comment
-	/^$/d; # Delete an empty line
-
-	s/^$//;tparse-program.0
-	:parse-program.0
-
-	# Parse out individual strings
-	s/^[0-9]+/  i&\x1F/;tparse-program.append
-	s/^[a-z_0-9]+/  v&\x1F/;tparse-program.append
-	s/^'([^']*)'/  s\1\x1F/;tparse.append-single-quote-str
-	s/^"([^"]*)"/  s\1\x1F/;tparse.append-double-quote-str
-	s/^([A-Z])[A-Z_]*/  f\1\x1F/;tparse-program.append
-	s/^(.)/  f&\x1F/;tparse-program.append
-
-	i\
-	todo
-	bdbg
-
-	:parse-program.append
-		H
-		x;s/^\n//;s/\x1F.*//;y/\n/|/
-		x;s/.*\x1F//
-		bparse-program
+	/^#/d
+	l
 	q
-#	s/^[0-9]+/  i&\x1F/;tparse.append
-#	s/^[a-z_0-9]+/  v&\x1F/;tparse.append
-#	s/^'([^']*)'/  s\1\x1F/;tparse.append-single-quote-str
-#	s/^"([^"]*)"/  s\1\x1F/;tparse.append-double-quote-str
-#	s/^([A-Z])[A-Z_]*/  f\1\x1F/;tparse.append
-#	s/^(.)/  f&\x1F/;tparse.append
-#	bdbg
-#	q
-#	{
-#		s///
-#		# `Q 0` to always quit, the other `0`s are to add stuff to teh end. The `;` is to run to it.
-#		s/^;//
-#		s/$/Q/
-#		q
-#	}
-#
+	{
+		s///
+		# `Q 0` to always quit, the other `0`s are to add stuff to teh end. The `;` is to run to it.
+		s/^;//
+		s/$/Q/
+		bparse
+		brun-start
+	}
+
+
 bparse-program
 :accumulate-program
 	/^__END__$/!{
@@ -67,10 +34,6 @@ bparse-program
 	}
 
 	s///;x
-	# `Q 0` to always quit, the other `0`s are to add stuff to teh end. The `;` is to run to it.
-	s/^;//
-	s/$/Q/
-	bparse
 
 :parse
 	# Delete leading whitespace characters
