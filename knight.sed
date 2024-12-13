@@ -108,9 +108,12 @@
 # EXECUTE A VALUE
 :run
 
-	##
-	# Execute strings and integers by just pushing them on the stack
-	/C([is][^|]*\|)/{
+	#################################################################################################
+	#                                           Literals                                            #
+	#################################################################################################
+
+	## Execute strings and integers by just pushing them on the stack
+	/C[is]/{
 		# Push onto the stack
 		# TODO: should this go on the back, or front like we have? if so, modify const fns
 		H;x;s/(.*)\n(.* C)([is][^|]*).*/\3|\1/
@@ -118,35 +121,53 @@
 		bnext
 	}
 
-	# If the current value doesn't start with a space, then it must be a function.
-	/[^ ]C[^f]/{s/^/CURRENT value is a non-function with args\n/;bbug
+	#################################################################################################
+	#                                           Variables                                           #
+	#################################################################################################
+	/Cv/brun.todo
+
+
+	#################################################################################################
+	#                                           Functions                                           #
+	#################################################################################################
+
+	## ASSERTION: Ensure the current value is a function now; non-functions are handled before this.
+	/C[^f]/{s/^/CURRENT value is a non-function with args\n/;bbug
 	}
 
-	# If the current function doesn't have its arity set, the set the arity.
-	/ (Cf.)/{
+	# Set the arity of the function if it's not currently set.
+	/ Cf/{
+		# Reset jump
 		s/^$//;trun.1
 		:run.1
 
-		 # TODO: handle `|` function when we are done
+		# (TODO: handle `|` function when we are done)
+
+		# Technically these can all `b` to `run`, but they jump to other locations as optimizations.
 		s/ (Cf[TFNPR@])/0\1/;trun.function.zero-arity
 		s/ (Cf[][BCQDOL!~A,])/1\1/;trun.function.nonzero-arity
-		s_ (Cf[-+*/%<>?&;=W])_2\1_;trun.function.nonzero-arity
+		s# (Cf[-+*/%<>?&;=W])#2\1#;trun.function.nonzero-arity
 		s/ (Cf[IG])/3\1/;trun.function.nonzero-arity
-		s_ (CfS)_4\1_;trun.function.nonzero-arity
+		s/ (CfS)/4\1/;trun.function.nonzero-arity
 
 		s/^/unknown function encountered/;bbug
 	}
 
+	# Special cases for functions with non-zero arity
 	:run.function.nonzero-arity
 
+	/1Cf&/{
+		bdbg
+		q
+	}
 	# Functions which dont always execute their args
-	/1Cf[W&|B]|2CfI/{
+	/1Cf[W&|B=]|2CfI/{
 		i\
 			TODO: deferred evaluation function
 		q
 	}
 
-	# Functions which always execute their args, just execute
+	## Functions which always execute their args: Execute their arguments.
 	/[^0]C/{
 		s/([^0])C(f.[^N]*)N([^|]*\| ) /\1_\2C\3N/
 		brun
@@ -157,13 +178,12 @@
 	:run.todo
 	s/.*0C.(.)/todo: function \1/p;q
 
-	:run.function.zero-arity
-	/[^0a-z]C/{s/^/went to run.function.zero-arity with a nonzero-arity function\n/;bbug
-	}
-
 ################################################################################
 #                                   Arity 0                                    #
 ################################################################################
+	:run.function.zero-arity
+	/[^0a-z]C/{s/^/went to run.function.zero-arity with a nonzero-arity function\n/;bbug
+	}
 
 	# Keyword literals
 	/0CfT/{ x;s/^/T|/;bnext
@@ -336,7 +356,7 @@
 	/^a/bdbg
 	s/^T/true/
 	s/^F/false/
-	s/^N/null/
+	s/^N/null/; # TODO: MAKE EMPTY
 	s/^[is]//
 	x
 	brun.function.zero-arity
@@ -414,7 +434,7 @@
 	s/^$/0/
 	s/$/__END_OF_ADDSUB__/
 	G
-	s/(.*)__END_OF_ADDSUB__.*__END_OF_ADDSUB_ARGS__/i\1|/
+	s/(.*)__END_OF_ADDSUB__.*__END_OF_ADDSUB_ARGS__/i\1/
 	x;s/\n.*//;x
 	bnext
 
