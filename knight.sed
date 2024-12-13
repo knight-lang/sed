@@ -27,6 +27,7 @@
 	/^  [^f]/q ;# If the very first thing isn't a function, then exit.
 
 	## Get ready for execution
+	x;s/^/`VARS`/;x ;# Get ready for the list of variables
 	s/ /C/2    ;# Add "current" marker to the first function
 	s/ /N/3    ;# Add "next" marker to the next value
 
@@ -173,7 +174,7 @@ bug
 	/Cv/{
 		# If we're not executing, don't actually push the variable onto the stack.
 		/^#/bnext_nx
-
+		bdbg
 		brun.todo
 	}
 
@@ -274,7 +275,7 @@ bug
 	s/^/shouldn't get here\n/;bug
 
 	:run.todo
-	s/.*0C.(.).*/todo: function \1/p;q
+		s/.*C.(.).*/todo: function \1\n/p;q
 
 ################################################################################
 #                                   Arity 0                                    #
