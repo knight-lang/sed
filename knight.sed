@@ -108,7 +108,7 @@
 
 # EXECUTE A VALUE
 :run
-
+	l
 	#################################################################################################
 	#                                           Literals                                            #
 	#################################################################################################
@@ -218,13 +218,11 @@
 	/1Cf;/{x
 		s/^[^|]*\|// ;# Delete the topmost element on the stack
 		x
-		bdbg
 		# FALLTHRU
 	}
 
 	## Functions which always execute their args: Execute their arguments.
 	/[^0]C/{
-		l
 		:run.execute-next
 		s/([^0])C(f.[^N]*)N([^|]*\| ) /\1_\2C\3N/
 		brun
