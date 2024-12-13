@@ -3,6 +3,10 @@
 # Separators (the ` is part of them):
 # `NL` newline replacement used to represent strings
 # `PS` program separator, put between elements
+# `CUR` current function
+# `NXT` Next function
+# `DFR` deferred function, ie it hasnt gotten all its args
+
 
 ## NOTE: All `ASSERTIONS:` can be completely removed and the program should stay the same.
 # That means that things shouldnt rely on the `s//` from them.
@@ -31,8 +35,8 @@
 
 	## Get ready for execution
 	x;s/^/`VARS`/;x ;# Get ready for the list of variables
-	s/ /C/2    ;# Add "current" marker to the first function
-	s/ /N/3    ;# Add "next" marker to the next value
+	s/ /`CUR`/2    ;# Add "current" marker to the first function
+	s/ /`NXT`/3    ;# Add "next" marker to the next value
 
 	## Execute the program
 	brun
@@ -124,21 +128,21 @@ bug
 :next_nx
 
 	## ASSERTION: Ensure the current execution is actually finished
-	/[^0a-z ]C/{s/^/next when not done with a function\n/;bug
+	/[^0a-z ]`CUR`/{s/^/next when not done with a function\n/;bug
 	}
 
 	# Delete the iteration and the `CURRENT` marker.
-	s/[0a-z ]C/  /
+	s/[0a-z ]`CUR`/  /
 
 	# Check to see if there's a previous thing to run. If not, we're at end of program.
-	#/(.*[0-9])_/!{s/.*/<END OF PROGRAM>/p;q;}
-	/(.*[0-9])_/!q
+	#/(.*[0-9])`DFR`/!{s/.*/<END OF PROGRAM>/p;q;}
+	/(.*[0-9])`DFR`/!q
 
 	# Mark the previous thing as the next thing to run.
-	s//\1C/
+	s//\1`CUR`/
 
 	## ASSERTION: Make sure the arity is between 1 to 4.
-	/[1-4]C/!{s/^/arity isnt the right size\n/;bug
+	/[1-4]`CUR`/!{s/^/arity isnt the right size\n/;bug
 	}
 
 	# Reset branch condition
@@ -147,10 +151,10 @@ bug
 
 	# Reduce the arity by one. The `run.function.zero-arity` is an optimization, and not technically
 	# required.
-	s/1C/0C/;trun.function.zero-arity
-	s/2C/1C/;trun
-	s/3C/2C/;trun
-	s/4C/3C/
+	s/1`CUR`/0`CUR`/;trun.function.zero-arity
+	s/2`CUR`/1`CUR`/;trun
+	s/3`CUR`/2`CUR`/;trun
+	s/4`CUR`/3`CUR`/
 	# FALLTHRU
 
 # EXECUTE A VALUE
@@ -161,12 +165,12 @@ bug
 	#################################################################################################
 
 	## Execute strings and integers by just pushing them on the stack
-	/C[is]/{
+	/`CUR`[is]/{
 		# If we're not executing, don't actually push the literal onto the stack.
 		#/^#/bnext_nx
 
 		# Push onto the stack
-		H;x;s/(.*)\n(.* C)([is][^`PS`]*).*/\3`PS`\1/
+		H;x;s/(.*)\n(.* `CUR`)([is][^`PS`]*).*/\3`PS`\1/
 		# Move back to the previous reference
 		bnext
 	}
@@ -174,7 +178,7 @@ bug
 	#################################################################################################
 	#                                           Variables                                           #
 	#################################################################################################
-	/Cv/{
+	/`CUR`v/{
 		# If we're not executing, don't actually push the variable onto the stack.
 		/^#/bnext_nx
 		bdbg
@@ -187,11 +191,11 @@ bug
 	#################################################################################################
 
 	## ASSERTION: Ensure the current value is a function now; non-functions are handled before this.
-	/C[^f]/{s/^/CURRENT value is a non-function with args\n/;bug
+	/`CUR`[^f]/{s/^/CURRENT value is a non-function with args\n/;bug
 	}
 
 	# Set the arity of the function if it's not currently set.
-	/ Cf/{
+	/ `CUR`f/{
 		# Reset jump
 		s/^$//;trun.1
 		:run.1
@@ -199,12 +203,12 @@ bug
 		# Technically these can all `b` to `run`, but they jump to other locations as optimizations.
 
 		# vvv todo: this won't jump to the `#` place
-		s/ (Cf[TFNPR@])/0\1/;trun.function.zero-arity
+		s/ (`CUR`f[TFNPR@])/0\1/;trun.function.zero-arity
 
-		s/ (Cf[][BCQDOL!~A,])/1\1/;trun.function.nonzero-arity
-		s# (Cf[-+*/%<>?&;=W|])#2\1#;trun.function.nonzero-arity
-		s/ (Cf[IG])/3\1/;trun.function.nonzero-arity
-		s/ (CfS)/4\1/;trun.function.nonzero-arity
+		s/ (`CUR`f[][BCQDOL!~A,])/1\1/;trun.function.nonzero-arity
+		s# (`CUR`f[-+*/%<>?&;=W|])#2\1#;trun.function.nonzero-arity
+		s/ (`CUR`f[IG])/3\1/;trun.function.nonzero-arity
+		s/ (`CUR`fS)/4\1/;trun.function.nonzero-arity
 
 		s/^/unknown function encountered/;bug
 	}
@@ -218,12 +222,12 @@ bug
 
 
 	## &
-	/1Cf&/{s//aCf\&/;x
+	/1`CUR`f&/{s//a`CUR`f\&/;x
 		brun.todo
 		s/^[^`PS`]*/&`PS`&/
 		bto_boolean
 	}
-	/aCf&/{x
+	/a`CUR`f&/{x
 		brun.todo
 		# Top of the stack is true, pop it off and run the right
 		/^T`PS`/{
@@ -231,7 +235,7 @@ bug
 			s/^[^`PS`]*`PS`//; # Delete the first argument to `&`
 			x; # go back to the instruction stack
 			# unconditionally just jump to the next value as if `&` never existed
-			s/aC(f.[^N]*)N([^`PS`]*`PS` ) /  \1C\2N/;
+			s/a`CUR`(f.[^`NXT`]*)`NXT`([^`PS`]*`PS` ) /  \1`CUR`\2`NXT`/;
 			brun
 		}
 
@@ -242,62 +246,62 @@ bug
 		s/^F`PS`//; # Delete the "false" conditional out
 		x; # go back to the instruction space
 		s/^/#/; # Add the indicator that we're not actually executing programs rn to the front
-		s/aCf&/0Cf\&/
+		s/a`CUR`f&/0`CUR`f\&/
 		brun.execute-next
 	}
 
-	/0Cf&/{
+	/0`CUR`f&/{
 		brun.todo
 		s/^#//; # Delete the frontmost "dont execute" marker
 		bnext_nx
 	}
 
 	# Functions which dont always execute their args
-	/1Cf[W&|B=]|2CfI/{
+	/1`CUR`f[W&|B=]|2`CUR`fI/{
 		i\
 			TODO: deferred evaluation function
 		q
 	}
 
 	# ; -- delete the first argument from the stack after evaluating it, it's not needed.
-	/1Cf;/{x
+	/1`CUR`f;/{x
 		s/^[^`PS`]*`PS`// ;# Delete the topmost element on the stack
 		x
 		# FALLTHRU
 	}
 
 	## Functions which always execute their args: Execute their arguments.
-	/[^0]C/{
+	/[^0]`CUR`/{
 		:run.execute-next
-		s/([^0])C(f.[^N]*)N([^`PS`]*`PS` ) /\1_\2C\3N/
+		s/([^0])`CUR`(f.[^`NXT`]*)`NXT`([^`PS`]*`PS` ) /\1`DFR`\2`CUR`\3`NXT`/
 		brun
 	}
 
 	s/^/shouldn't get here\n/;bug
 
 	:run.todo
-		s/.*C.(.).*/todo: function \1\n/p;q
+		s/.*`CUR`.(.).*/todo: function \1\n/p;q
 
 ################################################################################
 #                                   Arity 0                                    #
 ################################################################################
 	:run.function.zero-arity
-	/[^0a-z]C/{s/^/went to run.function.zero-arity with a nonzero-arity function\n/;bug
+	/[^0a-z]`CUR`/{s/^/went to run.function.zero-arity with a nonzero-arity function\n/;bug
 	}
 
 	# Keyword literals
-	/0CfT/{ x;s/^/T`PS`/;bnext
+	/0`CUR`fT/{ x;s/^/T`PS`/;bnext
 	}
-	/0CfF/{ x;s/^/F`PS`/;bnext
+	/0`CUR`fF/{ x;s/^/F`PS`/;bnext
 	}
-	/0CfN/{ x;s/^/N`PS`/;bnext
+	/0`CUR`fN/{ x;s/^/N`PS`/;bnext
 	}
 
 	## PROMPT
-	/0CfP/brun.todo
+	/0`CUR`fP/brun.todo
 
 	## RANDOM
-	/0CfR/brun.todo
+	/0`CUR`fR/brun.todo
 
 ################################################################################
 #                                   Arity 1                                    #
@@ -305,15 +309,15 @@ bug
 	# No `B`, it's handled elsewhere
 
 	## CALL
-	/0CfC/brun.todo
+	/0`CUR`fC/brun.todo
 
 	## QUIT
-	/0CfQ/{s//aCfQ/;x;bto_integer
+	/0`CUR`fQ/{s//a`CUR`fQ/;x;bto_integer
 	}
-	/aCfQ/{x;s/^([0-9]*).*/<exit with status \1>\n/p;q;}
+	/a`CUR`fQ/{x;s/^([0-9]*).*/<exit with status \1>\n/p;q;}
 
 	## DUMP
-	/0CfD/{x;H
+	/0`CUR`fD/{x;H
 		s/^$//;trun.DUMP.0
 		:run.DUMP.0
 
@@ -344,9 +348,9 @@ bug
 	}
 
 	## OUTPUT
-	/0CfO/{s//aCfO/;x;bto_string
+	/0`CUR`fO/{s//a`CUR`fO/;x;bto_string
 	}
-	/aCfO/{x
+	/a`CUR`fO/{x
 		H            ;# save the stack
 		s/`PS`.*//     ;# Delete everything other than the string to print
 		s/`NL`/\n/g  ;# Replace the newline replacement hack with actual newlines.
@@ -369,12 +373,12 @@ bug
 	}
 
 	## LENGTH
-	/0CfL/brun.todo
+	/0`CUR`fL/brun.todo
 
 	## !
-	/0Cf!/{s//aCf!/;x;bto_boolean
+	/0`CUR`f!/{s//a`CUR`f!/;x;bto_boolean
 	}
-	/aCf!/{x
+	/a`CUR`f!/{x
 		s/^T/_/
 		s/^F/T/
 		s/^_/F/
@@ -382,9 +386,9 @@ bug
 	}
 
 	## ~
-	/0Cf~/{s//aCf~/;x;bto_integer
+	/0`CUR`f~/{s//a`CUR`f~/;x;bto_integer
 	}
-	/aCf~/{x
+	/a`CUR`f~/{x
 		s/^/i-/
 		s/^i--/i/
 		s/^i-0`PS`/i0/
@@ -392,59 +396,59 @@ bug
 	}
 
 	## ASCII
-	/0CfA/brun.todo
+	/0`CUR`fA/brun.todo
 
 	## , [ and ]
-	/0Cf[][,]/brun.todo
+	/0`CUR`f[][,]/brun.todo
 
 ################################################################################
 #                                   Arity 2                                    #
 ################################################################################
 
 	## +
-	/0Cf\+/{x
-		/^[^`PS`]*`PS`s/{x;s/0Cf\+/sCf+/;x;bto_string
+	/0`CUR`f\+/{x
+		/^[^`PS`]*`PS`s/{x;s/0`CUR`f\+/s`CUR`f+/;x;bto_string
 		}
-		/^[^`PS`]*`PS`i/{x;s/0Cf\+/iCf+/;x;bto_integer
+		/^[^`PS`]*`PS`i/{x;s/0`CUR`f\+/i`CUR`f+/;x;bto_integer
 		}
 		i\
 		TODO: add others
 	}
-	/sCf\+/{x
+	/s`CUR`f\+/{x
 		s/^([^`PS`]*)`PS`s([^`PS`]*)/s\2\1/
 		bnext
 	}
-	/iCf\+/{
-		s//bCf+/;x
+	/i`CUR`f\+/{
+		s//b`CUR`f+/;x
 		s/^([^`PS`]*)`PS`i([^`PS`]*)/\2+\1__END_OF_ADDSUB_ARGS__/;x
 		# FALLTHRU
 	}
 
 	## -
-	/0Cf-/{s//iCf-/;x;bto_integer
+	/0`CUR`f-/{s//i`CUR`f-/;x;bto_integer
 	}
-	/iCf-/{s//bCf-/;x;
+	/i`CUR`f-/{s//b`CUR`f-/;x;
 		s/`PS`/__TMP__/1
 		s/`PS`/__TMP__/1
 		s/(.*)__TMP__(.*)__TMP__/\2-\1__END_OF_ADDSUB_ARGS__/;
 		bto_integer
 	}
-	/bCf[-+]/{x;
+	/b`CUR`f[-+]/{x;
 		H
 		s/`PS`.*//
 		bsubtract
 	}
 
 	## *, /, %, ^, <, >
-	/0Cf[*/%^<>]/brun.todo
+	/0`CUR`f[*/%^<>]/brun.todo
 
 	## ?
-	/0Cf\?/brun.todo
+	/0`CUR`f\?/brun.todo
 
 	# (& and | are handled earlier)
 
 	## ;
-	/0Cf;/{x;
+	/0`CUR`f;/{x;
 		# DO NOTHING, as we've already executed the first argument. TODO: can this be optimized out,
 		# and we never actually reach this?
 		bnext
@@ -459,17 +463,17 @@ bug
 	# (IF is handled earlier)
 
 	## GET
-	/0CfG/brun.todo
+	/0`CUR`fG/brun.todo
 
 ################################################################################
 #                                   Arity 4                                    #
 ################################################################################
 
 	## SET
-	/0CfS/brun.todo
+	/0`CUR`fS/brun.todo
 
 ## EVERYTHING ELSE IS A BUG ##
-	s/.*0Cf(.).*/unknown function: \1/p
+	s/.*0`CUR`f(.).*/unknown function: \1/p
 	q
 
 ####################################################################################################
