@@ -80,6 +80,10 @@
 		x          ;# Go back to the parsed line, So we can begin parsing the nextline
 		bparse
 
+###
+# The program will never reach this point. Execution is only ever restarted via the `d` within
+# `parse`, and the `X__END__` check above goes directly down to `run`.
+###
 bug
 
 ####################################################################################################
@@ -100,6 +104,12 @@ bug
 ===[debug]=== hold space:
 	l;q
 
+
+####################################################################################################
+#                                                                                                  #
+#                                        Program Execution                                         #
+#                                                                                                  #
+####################################################################################################
 
 ## After finishing the execution of a function (and possibly pushing its value onto the stack),
 # update the pattern space to be the next thing to execute. This expects the pattern space to be
