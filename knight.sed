@@ -311,14 +311,32 @@ bug
 
 	## DUMP
 	/0CfD/{x;H
-		/^N\|.*/{
-			#s//null/p
-			x;s/.*//
-			x;s/.*//;p
-			q
-			bdbg
+		s/^$//;trun.dump.0
+		:run.dump.0
+
+		s/^N.*/null/p;trun.dump.done
+		s/^T.*/null/p;trun.dump.done
+		s/^F.*/null/p;trun.dump.done
+		s/^i([0-9]+).*/\1/p;trun.dump.done
+
+		## ASSERTION: Make sure it's a stirng
+		/^[^s]/{s/.*/called DUMP on an invalid type/;bug
 		}
+
+		# Strings are special
+		s/^s([^|]).*/\1/
+		s/^[\"]/\\&/g
+		s/^\n/\\n/g
+		s/^\x0D/\\r/g
+		s/^\x09/\\t/g
+		s/^/"/;s/$/"/; # Add quotes to the start and end
+		p
+
+		# FALLTHROUGH
+		:run.dump.done
 		bdbg
+		=
+		q
 	}
 
 	## OUTPUT
