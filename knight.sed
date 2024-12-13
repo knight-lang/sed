@@ -312,13 +312,13 @@ bug
 
 	## DUMP
 	/0CfD/{x;H
-		s/^$//;trun.dump.0
-		:run.dump.0
+		s/^$//;trun.DUMP.0
+		:run.DUMP.0
 
-		s/^N.*/null/;trun.dump.done
-		s/^T.*/true/;trun.dump.done
-		s/^F.*/false/;trun.dump.done
-		s/^i([0-9]+).*/\1/;trun.dump.done
+		s/^N.*/null/;trun.DUMP.done
+		s/^T.*/true/;trun.DUMP.done
+		s/^F.*/false/;trun.DUMP.done
+		s/^i([0-9]+).*/\1/;trun.DUMP.done
 
 		## ASSERTION: Make sure it's a string
 		/^[^s]/{s/.*/called DUMP on an invalid type/;bug
@@ -333,7 +333,7 @@ bug
 		s/^/"/;s/$/"/; # Add quotes to the start and end
 
 		# FALLTHROUGH
-		:run.dump.done
+		:run.DUMP.done
 			p           ;# Print out the current pattern space. (Technically could be on each `s/`)
 			g           ;# Replace the pattern space with `<program>\n<stack>`
 			s/.*\n//    ;# Delete the program from the stack
@@ -345,11 +345,21 @@ bug
 	/0CfO/{s//aCfO/;x;bto_string
 	}
 	/aCfO/{x;
-		# TODO: `\` at the end of the line, and convert ``LF`` to newlines
-		s/\|/\n/1
-		P;
-		s/.*\n/N|/; # Delete the current line from the stack, replacing with null
-		bnext
+		H
+		s/\|.*//
+		s/`LF`/\n/g
+
+		s/^$//;trun.OUTPUT.0
+		:run.OUTPUT.0
+
+		s/\\$//p;trun.OUTPUT.done
+		s/$/\n/p;# FALLTHROUGH
+
+		:run.OUTPUT.done
+
+		g;s/.*\n[^|]*/N/ ;# Replace the program space with the stack, then pop, then push `N`.
+		x;s/\n.*//       ;# Delete the stack from the program
+		bnext_nx
 	}
 
 	## LENGTH
