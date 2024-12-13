@@ -333,30 +333,34 @@ bug
 		s/^/"/;s/$/"/; # Add quotes to the start and end
 
 		# FALLTHROUGH
-		:run.DUMP.done
-			p           ;# Print out the current pattern space. (Technically could be on each `s/`)
-			g           ;# Replace the pattern space with `<program>\n<stack>`
-			s/.*\n//    ;# Delete the program from the stack
-			x;s/\n.*//  ;# Delete the stack from the program
-			bnext_nx
+	:run.DUMP.done
+		p           ;# Print out the current pattern space. (Technically could be on each `s/`)
+		g           ;# Replace the pattern space with `<program>\n<stack>`
+		s/.*\n//    ;# Delete the program from the stack
+		x;s/\n.*//  ;# Delete the stack from the program
+		bnext_nx
 	}
 
 	## OUTPUT
 	/0CfO/{s//aCfO/;x;bto_string
 	}
-	/aCfO/{x;
-		H
-		s/\|.*//
-		s/`LF`/\n/g
+	/aCfO/{x
+		H            ;# save the stack
+		s/\|.*//     ;# Delete everything other than the string to print
+		s/`LF`/\n/g  ;# Replace the newline replacement hack with actual newlines.
 
+		# Reset `t`. (Technically, I dont think you need the `s/^$`, as the `s/\|` always works.)
 		s/^$//;trun.OUTPUT.0
 		:run.OUTPUT.0
 
+		## Delete trailing `\`s, and then go to the end
 		s/\\$//p;trun.OUTPUT.done
-		s/$/\n/p;# FALLTHROUGH
 
-		:run.OUTPUT.done
+		## Add a newline to the end and print it
+		s/$/\n/p
 
+		# FALLTHROUGH
+	:run.OUTPUT.done
 		g;s/.*\n[^|]*/N/ ;# Replace the program space with the stack, then pop, then push `N`.
 		x;s/\n.*//       ;# Delete the stack from the program
 		bnext_nx
