@@ -116,7 +116,7 @@
 	## Execute strings and integers by just pushing them on the stack
 	/C[is]/{
 		# If we're not executing, don't actually push the literal onto the stack.
-		/^#/bnext_nx
+		#/^#/bnext_nx
 
 		# Push onto the stack
 		H;x;s/(.*)\n(.* C)([is][^|]*).*/\3|\1/
@@ -152,7 +152,10 @@
 		# (TODO: handle `|` function when we are done)
 
 		# Technically these can all `b` to `run`, but they jump to other locations as optimizations.
+
+		# vvv todo: this won't jump to the `#` place
 		s/ (Cf[TFNPR@])/0\1/;trun.function.zero-arity
+
 		s/ (Cf[][BCQDOL!~A,])/1\1/;trun.function.nonzero-arity
 		s# (Cf[-+*/%<>?&;=W])#2\1#;trun.function.nonzero-arity
 		s/ (Cf[IG])/3\1/;trun.function.nonzero-arity
@@ -160,16 +163,23 @@
 
 		s/^/unknown function encountered/;bbug
 	}
-
-	# Special cases for functions with non-zero arity
+#
+#	# Special cases for functions with non-zero arity
 	:run.function.nonzero-arity
+#	/^#.*[^0]C/{
+#		s/([^0])C(f.[^N]*)N([^|]*\| ) /\1_\2C\3N/
+#		brun
+#	}
+
 
 	## &
 	/1Cf&/{s//aCf\&/;x
+		brun.todo
 		s/^[^|]*/&|&/
 		bto_boolean
 	}
 	/aCf&/{x
+		brun.todo
 		# Top of the stack is true, pop it off and run the right
 		/^T\|/{
 			s///; # DELETE The `T`
@@ -192,7 +202,7 @@
 	}
 
 	/0Cf&/{
-
+		brun.todo
 		s/^#//; # Delete the frontmost "dont execute" marker
 		bnext_nx
 	}
@@ -208,11 +218,13 @@
 	/1Cf;/{x
 		s/^[^|]*\|// ;# Delete the topmost element on the stack
 		x
+		bdbg
 		# FALLTHRU
 	}
 
 	## Functions which always execute their args: Execute their arguments.
 	/[^0]C/{
+		l
 		:run.execute-next
 		s/([^0])C(f.[^N]*)N([^|]*\| ) /\1_\2C\3N/
 		brun
