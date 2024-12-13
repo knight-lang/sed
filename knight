@@ -20,5 +20,6 @@ D a
 ';
 printf "%s\nX__END__" "$2" | sed -nEf =(cat ./knight.sed | sed \
 	-e $'s/`VARS`/\x12/g' \
-	-e $'s/`LF`/\x13/g' \
+	-e $'s/`NL`/\x13/g' \
+	-e $'s/`PS`/\x14/g' \
 	)

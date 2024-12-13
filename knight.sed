@@ -1,5 +1,8 @@
 ###
 ##
+# Separators (the ` is part of them):
+# `NL` newline replacement used to represent strings
+# `PS` program separator, put between elements
 
 ## NOTE: All `ASSERTIONS:` can be completely removed and the program should stay the same.
 # That means that things shouldnt rely on the `s//` from them.
@@ -19,9 +22,9 @@
 	x          ;# Swap to the program that's been parsed
 
 	## Cleanup the program
-	s/^\n//    ;# Delete the `\n` that's on the first line
-	y/\n/|/    ;# Convert all newlines (which separated the parsed values) to `|`, the program sep
-	s/$/|  f:/ ;# Add a dummy function to the end, which is needed for proper functioning.
+	s/^\n//     ;# Delete the `\n` that's on the first line
+	s/$/\n  f:/ ;# Add a dummy function to the end, which is needed for proper functioning.
+	y/\n/`PS`/  ;# Convert all newlines (which separated the parsed values) to `PS`, the program sep
 
 	## Check to make sure there's actually something to execute.
 	/^  [^f]/q ;# If the very first thing isn't a function, then exit.
@@ -55,7 +58,7 @@
 			bparse.string
 		}
 		s//  s\1\2\x1F/;# Double quotes were found. Replace the string with its parsed replacement
-		s/\n/`LF`/     ;# Replace any newlines with `LF` (TODO: make this an ascii control charcater and use `y`)
+		s/\n/`NL`/     ;# Replace any newlines with `NL` (TODO: make this an ascii control charcater and use `y`)
 		bparse.append
 	}
 
@@ -163,7 +166,7 @@ bug
 		#/^#/bnext_nx
 
 		# Push onto the stack
-		H;x;s/(.*)\n(.* C)([is][^|]*).*/\3|\1/
+		H;x;s/(.*)\n(.* C)([is][^`PS`]*).*/\3`PS`\1/
 		# Move back to the previous reference
 		bnext
 	}
@@ -193,15 +196,13 @@ bug
 		s/^$//;trun.1
 		:run.1
 
-		# (TODO: handle `|` function when we are done)
-
 		# Technically these can all `b` to `run`, but they jump to other locations as optimizations.
 
 		# vvv todo: this won't jump to the `#` place
 		s/ (Cf[TFNPR@])/0\1/;trun.function.zero-arity
 
 		s/ (Cf[][BCQDOL!~A,])/1\1/;trun.function.nonzero-arity
-		s# (Cf[-+*/%<>?&;=W])#2\1#;trun.function.nonzero-arity
+		s# (Cf[-+*/%<>?&;=W|])#2\1#;trun.function.nonzero-arity
 		s/ (Cf[IG])/3\1/;trun.function.nonzero-arity
 		s/ (CfS)/4\1/;trun.function.nonzero-arity
 
@@ -211,7 +212,7 @@ bug
 #	# Special cases for functions with non-zero arity
 	:run.function.nonzero-arity
 #	/^#.*[^0]C/{
-#		s/([^0])C(f.[^N]*)N([^|]*\| ) /\1_\2C\3N/
+#		s/([^0])C(f.[^N]*)N([^|]*`PS` ) /\1_\2C\3N/
 #		brun
 #	}
 
@@ -219,26 +220,26 @@ bug
 	## &
 	/1Cf&/{s//aCf\&/;x
 		brun.todo
-		s/^[^|]*/&|&/
+		s/^[^`PS`]*/&`PS`&/
 		bto_boolean
 	}
 	/aCf&/{x
 		brun.todo
 		# Top of the stack is true, pop it off and run the right
-		/^T\|/{
+		/^T`PS`/{
 			s///; # DELETE The `T`
-			s/^[^|]*\|//; # Delete the first argument to `&`
+			s/^[^`PS`]*`PS`//; # Delete the first argument to `&`
 			x; # go back to the instruction stack
 			# unconditionally just jump to the next value as if `&` never existed
-			s/aC(f.[^N]*)N([^|]*\| ) /  \1C\2N/;
+			s/aC(f.[^N]*)N([^`PS`]*`PS` ) /  \1C\2N/;
 			brun
 		}
 
 		## ASSERTION: `bto_boolean` ever puts T or F on the stack
-		/^F\|/!{s/^/bto_boolean didnt put a T or F on top\n/;bug
+		/^F`PS`/!{s/^/bto_boolean didnt put a T or F on top\n/;bug
 		}
 
-		s/^F\|//; # Delete the "false" conditional out
+		s/^F`PS`//; # Delete the "false" conditional out
 		x; # go back to the instruction space
 		s/^/#/; # Add the indicator that we're not actually executing programs rn to the front
 		s/aCf&/0Cf\&/
@@ -260,7 +261,7 @@ bug
 
 	# ; -- delete the first argument from the stack after evaluating it, it's not needed.
 	/1Cf;/{x
-		s/^[^|]*\|// ;# Delete the topmost element on the stack
+		s/^[^`PS`]*`PS`// ;# Delete the topmost element on the stack
 		x
 		# FALLTHRU
 	}
@@ -268,7 +269,7 @@ bug
 	## Functions which always execute their args: Execute their arguments.
 	/[^0]C/{
 		:run.execute-next
-		s/([^0])C(f.[^N]*)N([^|]*\| ) /\1_\2C\3N/
+		s/([^0])C(f.[^N]*)N([^`PS`]*`PS` ) /\1_\2C\3N/
 		brun
 	}
 
@@ -285,11 +286,11 @@ bug
 	}
 
 	# Keyword literals
-	/0CfT/{ x;s/^/T|/;bnext
+	/0CfT/{ x;s/^/T`PS`/;bnext
 	}
-	/0CfF/{ x;s/^/F|/;bnext
+	/0CfF/{ x;s/^/F`PS`/;bnext
 	}
-	/0CfN/{ x;s/^/N|/;bnext
+	/0CfN/{ x;s/^/N`PS`/;bnext
 	}
 
 	## PROMPT
@@ -326,9 +327,9 @@ bug
 		}
 
 		# Strings are special
-		s/^s([^|]*).*/\1/
+		s/^s([^`PS`]*).*/\1/
 		s/[\"]/\\&/g
-		s/`LF`/\\n/g
+		s/`NL`/\\n/g
 		s/\x0D/\\r/g
 		s/\x09/\\t/g
 		s/^/"/;s/$/"/; # Add quotes to the start and end
@@ -347,10 +348,10 @@ bug
 	}
 	/aCfO/{x
 		H            ;# save the stack
-		s/\|.*//     ;# Delete everything other than the string to print
-		s/`LF`/\n/g  ;# Replace the newline replacement hack with actual newlines.
+		s/`PS`.*//     ;# Delete everything other than the string to print
+		s/`NL`/\n/g  ;# Replace the newline replacement hack with actual newlines.
 
-		# Reset `t`. (Technically, I dont think you need the `s/^$`, as the `s/\|` always works.)
+		# Reset `t`. (Technically, I dont think you need the `s/^$`, as the 's/`PS`' always works.)
 		s/^$//;trun.OUTPUT.0
 		:run.OUTPUT.0
 
@@ -362,7 +363,7 @@ bug
 
 		# FALLTHROUGH
 	:run.OUTPUT.done
-		g;s/.*\n[^|]*/N/ ;# Replace the program space with the stack, then pop, then push `N`.
+		g;s/.*\n[^`PS`]*/N/ ;# Replace the program space with the stack, then pop, then push `N`.
 		x;s/\n.*//       ;# Delete the stack from the program
 		bnext_nx
 	}
@@ -386,7 +387,7 @@ bug
 	/aCf~/{x
 		s/^/i-/
 		s/^i--/i/
-		s/^i-0\|/i0/
+		s/^i-0`PS`/i0/
 		bnext
 	}
 
@@ -402,20 +403,20 @@ bug
 
 	## +
 	/0Cf\+/{x
-		/^[^|]*\|s/{x;s/0Cf\+/sCf+/;x;bto_string
+		/^[^`PS`]*`PS`s/{x;s/0Cf\+/sCf+/;x;bto_string
 		}
-		/^[^|]*\|i/{x;s/0Cf\+/iCf+/;x;bto_integer
+		/^[^`PS`]*`PS`i/{x;s/0Cf\+/iCf+/;x;bto_integer
 		}
 		i\
 		TODO: add others
 	}
 	/sCf\+/{x
-		s/^([^|]*)\|s([^|]*)/s\2\1/
+		s/^([^`PS`]*)`PS`s([^`PS`]*)/s\2\1/
 		bnext
 	}
 	/iCf\+/{
 		s//bCf+/;x
-		s/^([^|]*)\|i([^|]*)/\2+\1__END_OF_ADDSUB_ARGS__/;x
+		s/^([^`PS`]*)`PS`i([^`PS`]*)/\2+\1__END_OF_ADDSUB_ARGS__/;x
 		# FALLTHRU
 	}
 
@@ -423,14 +424,14 @@ bug
 	/0Cf-/{s//iCf-/;x;bto_integer
 	}
 	/iCf-/{s//bCf-/;x;
-		s/\|/__TMP__/1
-		s/\|/__TMP__/1
+		s/`PS`/__TMP__/1
+		s/`PS`/__TMP__/1
 		s/(.*)__TMP__(.*)__TMP__/\2-\1__END_OF_ADDSUB_ARGS__/;
 		bto_integer
 	}
 	/bCf[-+]/{x;
 		H
-		s/\|.*//
+		s/`PS`.*//
 		bsubtract
 	}
 
@@ -494,8 +495,8 @@ bug
 
 :to_boolean
 	/^a/bdbg
-	s/^([sN]|i0)\|/F|/
-	s/^[is][^|]*/T/
+	s/^([sN]|i0)`PS`/F`PS`/
+	s/^[is][^|]*/T`PS`/
 	/^[TF]/!{s/^/somehow to_boolean failed/;bug
 	}
 	x
@@ -507,11 +508,11 @@ bug
 	s/^[FN]/0/
 	s/^i//
 	/^s/{
-		s/\|/__TMP__/1
+		s/`PS`/__TMP__/1
 		tto_integer.0
 		:to_integer.0
-		s/^s[[:space:]]*([-+]?[0-9]+).*__TMP__/\1|/;tto_integer.1
-		s/^s.*__TMP__/0|/
+		s/^s[[:space:]]*([-+]?[0-9]+).*__TMP__/\1`PS`/;tto_integer.1
+		s/^s.*__TMP__/0`PS`/
 		:to_integer.1
 		s/^[+]//
 	}
