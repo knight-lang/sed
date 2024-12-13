@@ -484,7 +484,7 @@ bug
 	/^[TF]/!{s/^/somehow to_boolean failed/;bug
 	}
 	x
-	brun
+	brun.function.zero-arity
 
 :to_integer
 	/^a/bdbg
