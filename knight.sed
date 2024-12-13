@@ -75,6 +75,7 @@
 :next
  	# Swap the value stack back
 	x
+:next_nx
 
 	## ASSERTION: Ensure the current execution is actually finished
 	/[^0a-z ]C/{s/^/next when not done with a function\n/;bbug
@@ -114,8 +115,10 @@
 
 	## Execute strings and integers by just pushing them on the stack
 	/C[is]/{
+		# If we're not executing, don't actually push the literal onto the stack.
+		/^#/bnext_nx
+
 		# Push onto the stack
-		# TODO: should this go on the back, or front like we have? if so, modify const fns
 		H;x;s/(.*)\n(.* C)([is][^|]*).*/\3|\1/
 		# Move back to the previous reference
 		bnext
@@ -124,7 +127,12 @@
 	#################################################################################################
 	#                                           Variables                                           #
 	#################################################################################################
-	/Cv/brun.todo
+	/Cv/{
+		# If we're not executing, don't actually push the variable onto the stack.
+		/^#/bnext_nx
+
+		brun.todo
+	}
 
 
 	#################################################################################################
@@ -162,6 +170,7 @@
 		bto_boolean
 	}
 	/aCf&/{x
+		# Top of the stack is true, pop it off and run the right
 		/^T\|/{
 			s///; # DELETE The `T`
 			s/^[^|]*\|//; # Delete the first argument to `&`
@@ -170,7 +179,22 @@
 			s/aC(f.[^N]*)N([^|]*\| ) /  \1C\2N/;
 			brun
 		}
-		bdbg
+
+		## ASSERTION: `bto_boolean` ever puts T or F on the stack
+		/^F\|/!{s/^/bto_boolean didnt put a T or F on top\n/;bbug
+		}
+
+		s/^F\|//; # Delete the "false" conditional out
+		x; # go back to the instruction space
+		s/^/#/; # Add the indicator that we're not actually executing programs rn to the front
+		s/aCf&/0Cf\&/
+		brun.execute-next
+	}
+
+	/0Cf&/{
+
+		s/^#//; # Delete the frontmost "dont execute" marker
+		bnext_nx
 	}
 
 	# Functions which dont always execute their args
@@ -189,14 +213,15 @@
 
 	## Functions which always execute their args: Execute their arguments.
 	/[^0]C/{
+		:run.execute-next
 		s/([^0])C(f.[^N]*)N([^|]*\| ) /\1_\2C\3N/
 		brun
 	}
 
-	s/^/shouldn't get here/;bbug
+	s/^/shouldn't get here\n/;bbug
 
 	:run.todo
-	s/.*0C.(.)/todo: function \1/p;q
+	s/.*0C.(.).*/todo: function \1/p;q
 
 ################################################################################
 #                                   Arity 0                                    #
