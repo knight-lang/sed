@@ -17,4 +17,4 @@
 #O 12
 #O "1''\\'$'"
 ';
-printf "%s\n__END__" "$2" | sed -nEf ./knight.sed
+printf "%s\nX__END__" "$2" | sed -nEf ./knight.sed

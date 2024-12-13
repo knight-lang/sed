@@ -6,97 +6,85 @@
 
 #1{=;s/^/;/;}
 
-:parse-program
-	/^__END__$/{
-		s///; # Delete `__END__`
-		x; # Pull the pattern space back in
-		#s/^/  f;|/; # Add `;` to the start: TODO is this needed?
-		#s/$/|  fQ|  i0/; # Add `Q 0` to the end: TODO, is thisneeded?
-		s/$/|  fQ/
-		brun-start
-	}
+####################################################################################################
+#                                                                                                  #
+#                                        Parsing the Input                                         #
+#                                                                                                  #
+####################################################################################################
 
-	# Delete leading whitespace characters
-	s/^[[:space:]:()]+// ;# Delete leading whitespace
-	/^#/d                ;# If the rest of the line is a comment, delete and start parsing again
-	/^$/d                ; # Delete an empty line
+# If we ever receive `^X__END__$` on its own line, then that means we're done parsing. (We use the
+# `X` to start it as no valid knight expression can start with it)
+/^X__END__$/{
+	s///       ;# Delete `X__END__`
+	x          ;# Swap to the program that's been parsed
 
-	# Parse out strings
+	## Cleanup the program
+	s/^\n//    ;# Delete the `\n` that's on the first line
+	y/\n/|/    ;# Convert all newlines (which separated the parsed values) to `|`, the program sep
+	s/$/|  f:/ ;# Add a dummy function to the end, which is needed for proper functioning.
+
+	## Check to make sure there's actually something to execute.
+	/^  [^f]/q ;# If the very first thing isn't a function, then exit.
+
+	## Get ready for execution
+	s/ /C/2    ;# Add "current" marker to the first function
+	s/ /N/3    ;# Add "next" marker to the next value
+
+	## Execute the program
+	brun
+}
+
+## parse out a value.
+# `parse` is its own label, so we can go to it after parsing a value. It intentionally doesn't
+# include the `X__END__` check, as the only time we ever completely restart execution from the top
+# is during the `/^(#|$)/d` check.
+:parse
+
+	## Delete leading whitespace and comments
+	s/^[[:space:]:()]+// ;# Strip leading whitespace from the line
+	/^(#|$)/d            ;# If the line starts with a `#` or is empty, delete it and go again.
+
+	## Parse strings, if the line starts with a quote.
 	/^["']/{
-		:keep-looking-quote
-		/^"([^"]*)"|^'([^']*)'/!{  # No quotes found, try again.
-			N; # Add the next input line to the pattern space; the `b` line continues onwards.
-			bkeep-looking-quote
+		:parse.string
+
+		# If we don't have a full string on this line, then accumulate until we do.
+		/^"([^"]*)"|^'([^']*)'/!{
+			N;             # Adds a newline followed by the next input line to the pattern space.
+			bparse.string
 		}
 		s//  s\1\2\x1F/;# Double quotes were found. Replace the string with its parsed replacement
 		s/\n/_NL_/     ;# Replace any newlines with _NL_ (TODO: make this an ascii control charcater and use `y`)
-		bparse-program.append
+		bparse.append
 	}
 
 	# Reset the "jump" counter so the `s` below can jump down
-	s/^$//;tparse-program.0
-	:parse-program.0
+	s/^$//;tparse.0
+	:parse.0
 
-	# Parse out individual strings
-	s/^[0-9]+/  i&\x1F/;tparse-program.append
-	s/^[a-z_0-9]+/  v&\x1F/;tparse-program.append
-	s/^([A-Z])[A-Z_]*/  f\1\x1F/;tparse-program.append
-	s/^(.)/  f&\x1F/;tparse-program.append
+	## Parse out the remaining (non-multiline) constructs: Integers, variables, and functions
+	s/^[0-9]+/  i&\x1F/;tparse.append
+	s/^[a-z_0-9]+/  v&\x1F/;tparse.append
+	s/^([A-Z])[A-Z_]*/  f\1\x1F/;tparse.append
+	s/^(.)/  f&\x1F/;tparse.append
 
 	## ASSERTION: Somehow nothing could be parsed?
 	s/.*/unable to parse out something?/;bug
 
-	:parse-program.append
-		H
-		x;s/^\n//;s/\x1F.*//;y/\n/|/
-		x;s/.*\x1F//
-		bparse-program
+	## Append the value we parsed to the end of the program, and continue parsing
+	:parse.append
+		H          ;# Add the value we just parsed along with the rest of the line to the program.
+		s/.*\x1F// ;# Delete off what was just parsed from the current line.
+		x          ;# Swap to the program to delete the remainder of the line.
+		s/\x1F.*// ;# Delete everything after the parsed value from the program.
+		x          ;# Go back to the parsed line, So we can begin parsing the nextline
+		bparse
 
 bug
 
-bparse-program
-:accumulate-program
-	/^__END__$/!{
-		H;n;baccumulate-program
-	}
-
-	s///;x
-	# `Q 0` to always quit, the other `0`s are to add stuff to teh end. The `;` is to run to it.
-	s/^;//
-	s/$/Q/
-	bparse
-
-:parse
-	# Delete leading whitespace characters
-	s/^[[:space:]:()]+//
-
-	# Parse comments. We need this b/c no way to use `\n` in char classes.
-	:parse.comments
-		s/^#\n//;tparse
-		s/^#./#/;tparse.comments
-
-	# If we're done parsing, run the program
-	/^$/{
-		# s/$/:/
-		x;brun-start
-	}
-
-	# Parse out individual strings
-	s/^[0-9]+/  i&\x1F/;tparse.append
-	s/^[a-z_0-9]+/  v&\x1F/;tparse.append
-	s/^'([^']*)'/  s\1\x1F/;tparse.append-single-quote-str
-	s/^"([^"]*)"/  s\1\x1F/;tparse.append-double-quote-str
-	s/^([A-Z])[A-Z_]*/  f\1\x1F/;tparse.append
-	s/^(.)/  f&\x1F/;tparse.append
-
-	:parse.append-single-quote-str
-	:parse.append-double-quote-str
-		# TODO: replace newlines in string with an escape
-	:parse.append
-		H
-		x;s/^\n//;s/\x1F.*//;y/\n/|/
-		x;s/.*\x1F//
-		bparse
+####################################################################################################
+#                                            Utilities                                             #
+####################################################################################################
 
 # Named `ug` so we can `bug` and branch to bug. lol im silly.
 :ug
@@ -111,13 +99,6 @@ bparse-program
 	i\
 ===[debug]=== hold space:
 	l;q
-
-:run-start
-	/^  [^f]/q ; # If the first thing parsed isn't a function, just stop
-	s/ /C/2; # Add "current function" marker
-	s/ /N/3; # Add "next function" marker
-	s/^/\|/
-	brun
 
 
 ## After finishing the execution of a function (and possibly pushing its value onto the stack),
