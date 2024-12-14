@@ -178,7 +178,6 @@ bug
 	#                                           Variables                                           #
 	#################################################################################################
 	/`CUR`v/{
-		bdbg
 		H
 		x
 		h
@@ -492,7 +491,7 @@ bug
 	/i`CUR`f-/{s//b`CUR`f-/;x;
 		s/`PS`/__TMP__/1
 		s/`PS`/__TMP__/1
-		s/(.*)__TMP__(.*)__TMP__/\2-\1__END_OF_ADDSUB_ARGS__/;
+		s/(.*)__TMP__(.*)__TMP__/\2-\1__END_OF_ADDSUB_ARGS__`PS`/;
 		bto_integer
 	}
 	/b`CUR`f-/{x;
@@ -510,7 +509,6 @@ bug
 	## =
 	/0`CUR`f=/{
 		H;x
-		bdbg
 		s/`PS`/__TMP__/1
 		s/(.*)\n.*0`CUR`f=`PS`  v([a-z_]+).*/\2\n\1/
 #
