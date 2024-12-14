@@ -178,6 +178,7 @@ bug
 	#                                           Variables                                           #
 	#################################################################################################
 	/`CUR`v/{
+		bdbg
 		H
 		x
 		h
@@ -380,7 +381,7 @@ bug
 		s/^N.*/null/;trun.DUMP.done
 		s/^T.*/true/;trun.DUMP.done
 		s/^F.*/false/;trun.DUMP.done
-		s/^i([0-9]+).*/\1/;trun.DUMP.done
+		s/^i(-?[0-9]+).*/\1/;trun.DUMP.done
 
 		## ASSERTION: Make sure it's a string
 		/^[^s]/{s/.*/called DUMP on an invalid type/;bug
@@ -479,6 +480,11 @@ bug
 		s/^([^`PS`]*)`PS`i([^`PS`]*)/\2+\1__END_OF_ADDSUB_ARGS__/;x
 		# FALLTHRU
 	}
+	/b`CUR`f\+/{x
+		H
+		s/`PS`.*//
+		bsubtract
+	}
 
 	## -
 	/0`CUR`f-/{s//i`CUR`f-/;x;bto_integer
@@ -489,7 +495,7 @@ bug
 		s/(.*)__TMP__(.*)__TMP__/\2-\1__END_OF_ADDSUB_ARGS__/;
 		bto_integer
 	}
-	/b`CUR`f[-+]/{x;
+	/b`CUR`f-/{x;
 		H
 		s/`PS`.*//
 		bsubtract
@@ -504,13 +510,17 @@ bug
 	## =
 	/0`CUR`f=/{
 		H;x
+		bdbg
 		s/`PS`/__TMP__/1
 		s/(.*)\n.*0`CUR`f=`PS`  v([a-z_]+).*/\2\n\1/
-
-		/^([a-z_]+)\n(.*)__TMP__(.*`VARS`)/{
-			#s//{\1}/
-			#bdbg
-		}
+#
+#		/^([a-z_]+)\n(.*)__TMP__(.*`VARS`)/{
+#			i\
+#			todo
+#			q
+#			#s//{\1}/
+#			#bdbg
+#		}
 		s/^([a-z]+)\n(.*)__TMP__(.*)/\2`PS`\3`VARS`\1`VSEP`\2/
 		bnext
 	}
