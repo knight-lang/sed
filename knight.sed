@@ -34,7 +34,6 @@
 	/^  [^f]/q ;# If the very first thing isn't a function, then exit.
 
 	## Get ready for execution
-	x;s/^/`VARS`/;x ;# Get ready for the list of variables
 	s/ /`CUR`/2    ;# Add "current" marker to the first function
 	s/ /`NXT`/3    ;# Add "next" marker to the next value
 
@@ -179,10 +178,60 @@ bug
 	#                                           Variables                                           #
 	#################################################################################################
 	/`CUR`v/{
-		# If we're not executing, don't actually push the variable onto the stack.
-		/^#/bnext_nx
-		bdbg
-		brun.todo
+		H
+		x
+		h
+		s/(.*)\n.*`CUR`v([a-z_]+).*/\2:\1/
+		s/^([^:]*).*`PS`/\1:/
+
+		trun.variable.sub
+		:run.variable.sub
+		/^`VARS`/{bdbg
+		}
+
+		# RIP, no way to do backreferences in POSIX sed :-(
+		s/^([^:]*)a(:.*)a`VSEP`/\1a\2`VSEP`/g
+		s/^([^:]*)b(:.*)b`VSEP`/\1b\2`VSEP`/g
+		s/^([^:]*)c(:.*)c`VSEP`/\1c\2`VSEP`/g
+		s/^([^:]*)d(:.*)d`VSEP`/\1d\2`VSEP`/g
+		s/^([^:]*)e(:.*)e`VSEP`/\1e\2`VSEP`/g
+		s/^([^:]*)f(:.*)f`VSEP`/\1f\2`VSEP`/g
+		s/^([^:]*)g(:.*)g`VSEP`/\1g\2`VSEP`/g
+		s/^([^:]*)h(:.*)h`VSEP`/\1h\2`VSEP`/g
+		s/^([^:]*)i(:.*)i`VSEP`/\1i\2`VSEP`/g
+		s/^([^:]*)j(:.*)j`VSEP`/\1j\2`VSEP`/g
+		s/^([^:]*)k(:.*)k`VSEP`/\1k\2`VSEP`/g
+		s/^([^:]*)l(:.*)l`VSEP`/\1l\2`VSEP`/g
+		s/^([^:]*)m(:.*)m`VSEP`/\1m\2`VSEP`/g
+		s/^([^:]*)n(:.*)n`VSEP`/\1n\2`VSEP`/g
+		s/^([^:]*)o(:.*)o`VSEP`/\1o\2`VSEP`/g
+		s/^([^:]*)p(:.*)p`VSEP`/\1p\2`VSEP`/g
+		s/^([^:]*)q(:.*)q`VSEP`/\1q\2`VSEP`/g
+		s/^([^:]*)r(:.*)r`VSEP`/\1r\2`VSEP`/g
+		s/^([^:]*)s(:.*)s`VSEP`/\1s\2`VSEP`/g
+		s/^([^:]*)t(:.*)t`VSEP`/\1t\2`VSEP`/g
+		s/^([^:]*)u(:.*)u`VSEP`/\1u\2`VSEP`/g
+		s/^([^:]*)v(:.*)v`VSEP`/\1v\2`VSEP`/g
+		s/^([^:]*)w(:.*)w`VSEP`/\1w\2`VSEP`/g
+		s/^([^:]*)x(:.*)x`VSEP`/\1x\2`VSEP`/g
+		s/^([^:]*)y(:.*)y`VSEP`/\1y\2`VSEP`/g
+		s/^([^:]*)z(:.*)z`VSEP`/\1z\2`VSEP`/g
+		s/^([^:]*)_(:.*)_`VSEP`/\1_\2`VSEP`/g
+		s/^([^:]*)[a-z_]:/\1:/
+		trun.variable.sub
+
+		## ASSERTION: that we can actually find it
+		/^:(.*)`VARS``VSEP`([^`VARS`]*).*/!{s/^/problem finding variable name/;bug
+		}
+
+		## We found the variable
+		s/^:(.*)`VARS``VSEP`([^`VARS`]*).*/\2/
+		G
+		s/\n/`PS`/
+		s/\n.*//
+		x
+		s/.*\n//
+		bnext_nx
 	}
 
 
@@ -219,6 +268,13 @@ bug
 #		s/([^0])C(f.[^N]*)N([^|]*`PS` ) /\1_\2C\3N/
 #		brun
 #	}
+
+	## =
+	/2`CUR`f=/{
+		/2(`CUR`f=`PS` )`NXT`(v[a-z_]+`PS` ) /!{s/.*/assigned to non-variable/p;q;}
+		s//1\1 \2`NXT`/
+		brun
+	}
 
 
 	## &
@@ -257,7 +313,7 @@ bug
 	}
 
 	# Functions which dont always execute their args
-	/1`CUR`f[W&|B=]|2`CUR`fI/{
+	/1`CUR`f[W&|B]|2`CUR`fI/{
 		i\
 			TODO: deferred evaluation function
 		q
@@ -444,6 +500,20 @@ bug
 
 	## ?
 	/0`CUR`f\?/brun.todo
+
+	## =
+	/0`CUR`f=/{
+		H;x
+		s/`PS`/__TMP__/1
+		s/(.*)\n.*0`CUR`f=`PS`  v([a-z_]+).*/\2\n\1/
+
+		/^([a-z_]+)\n(.*)__TMP__(.*`VARS`)/{
+			#s//{\1}/
+			#bdbg
+		}
+		s/^([a-z]+)\n(.*)__TMP__(.*)/\2`PS`\3`VARS`\1`VSEP`\2/
+		bnext
+	}
 
 	# (& and | are handled earlier)
 

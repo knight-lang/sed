@@ -3,9 +3,46 @@
 [ $# = 0 ] && set -- -e $'   #hel \tlo\n  #  hi\n
 #; O + 1 2 O 3
 # ; OUTPUT (; & 0 1 "A") OUTPUT 3
-; = a 3
-D a
-; O 3 O + 19 TRUE
+; = foo 3
+; = bar 4
+; = bar 9
+O + foo bar
+';
+
+# the `X__END__` is needed so sed knows where the program stops; we can't use the entire STDIN, as
+# the `PROMPT` command access it too.
+< <(printf "%s\nX__END__\n" "$2") \
+	sed -nEf =(cat ./knight.sed | sed \
+	-e $'s/`VARS`/\x12/g' \
+	-e $'s/`NL`/\x13/g' \
+	-e $'s/`PS`/\x14/g' \
+	-e $'s/`NXT`/\x15/g' \
+	-e $'s/`CUR`/\x16/g' \
+	-e $'s/`DFR`/\x17/g' \
+	-e $'s/`VSEP`/\x18/g' \
+	) \
+| sed -e 's/\\022/`VARS`/g' \
+		-e 's/\\023/<\\n>/g' \
+		-e 's/\\024/|/g' \
+		-e 's/\\025/N/g' \
+		-e 's/\\026/C/g' \
+		-e 's/\\027/_/g' \
+		-e 's/\\030/`VSEP`/g'
+
+exit
+
+[ $# = 0 ] && set -- -e $'   #hel \tlo\n  #  hi\n
+#; O + 1 2 O 3
+# ; OUTPUT (; & 0 1 "A") OUTPUT 3
+; = foo 3
+; = bar 4
+; = bar 9
+O + foo bar
+; = ateb 4
+O - 2 ateb
+# ; = alpha 3
+# D alpha
+# ; O 3 O + 19 TRUE
 
 
 # + 1 O & + 1 2 O F
@@ -18,11 +55,3 @@ D a
 #O 12
 #O "1''\\'$'"
 ';
-printf "%s\nX__END__" "$2" | sed -nEf =(cat ./knight.sed | sed \
-	-e $'s/`VARS`/\x12/g' \
-	-e $'s/`NL`/\x13/g' \
-	-e $'s/`PS`/\x14/g' \
-	-e $'s/`NXT`/\x15/g' \
-	-e $'s/`CUR`/\x16/g' \
-	-e $'s/`DFR`/\x17/g' \
-	)
