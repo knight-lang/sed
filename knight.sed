@@ -177,19 +177,20 @@ bug
 	#################################################################################################
 	#                                           Variables                                           #
 	#################################################################################################
-	/`CUR`v/{
-		H
-		x
-		h
+	/`CUR`v/{ ## SOMETHING IN HERE IS ADDING ENXTRA NEWLINES
+		H;x;h  ;# Make both the pattern and hold spaces identical
+
+		# Replace the hold space with `<variable name>:LIST OF VARIABLES`
 		s/(.*)\n.*`CUR`v([a-z_]+).*/\2:\1/
 		s/^([^:]*).*`PS`/\1:/
 
-		trun.variable.sub
-		:run.variable.sub
-		/^`VARS`/{bdbg
-		}
 
-		# RIP, no way to do backreferences in POSIX sed :-(
+		# Branch to reset the `t` counter
+		trun.variable.sub
+
+		## Since we don't have backreferences in POSIX sed, we have to manually find the variable
+		# name. We do this by deleting the last character of the variable name off
+		:run.variable.sub
 		s/^([^:]*)a(:.*)a`VSEP`/\1a\2`VSEP`/g
 		s/^([^:]*)b(:.*)b`VSEP`/\1b\2`VSEP`/g
 		s/^([^:]*)c(:.*)c`VSEP`/\1c\2`VSEP`/g
@@ -217,20 +218,34 @@ bug
 		s/^([^:]*)y(:.*)y`VSEP`/\1y\2`VSEP`/g
 		s/^([^:]*)z(:.*)z`VSEP`/\1z\2`VSEP`/g
 		s/^([^:]*)_(:.*)_`VSEP`/\1_\2`VSEP`/g
-		s/^([^:]*)[a-z_]:/\1:/
 		trun.variable.sub
+
+		## A shorter variable which had the same suffix was found. Ensure they're not accidentally used.
+		s/^([^:]+[a-z_]:.*`VARS`)(`VSEP`)/\1X\2/g
+
+		## If we're not at the end yet, then delete the last character and go again
+		/^([^:]*)[a-z_]:/{
+			s//\1:/
+			brun.variable.sub
+		}
 
 		## ASSERTION: that we can actually find it
 		/^:(.*)`VARS``VSEP`([^`VARS`]*).*/!{s/^/problem finding variable name/;bug
 		}
 
-		## We found the variable
-		s/^:(.*)`VARS``VSEP`([^`VARS`]*).*/\2/
+		## Replace the output with just the variable's value
+		s/^.*`VARS``VSEP`([^`VARS`]*).*/\1/
+
+		## Push that value onto the stack
 		G
 		s/\n/`PS`/
 		s/\n.*//
+
+		# Delete the saved stack from the program
 		x
 		s/.*\n//
+
+		# Go to the next value
 		bnext_nx
 	}
 

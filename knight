@@ -6,6 +6,8 @@
 ; = foo 3
 ; = bar + foo 9
 ; = c - bar foo
+; = c - bar foo
+; = c - bar c
 : OUTPUT c
 ';
 
