@@ -526,6 +526,8 @@ bug
 		H;x
 		s/`PS`/__TMP__/1
 		s/(.*)\n.*0`CUR`f=`PS`  v([a-z_]+).*/\2\n\1/
+
+		# TODO: in the future clear variables out
 #
 #		/^([a-z_]+)\n(.*)__TMP__(.*`VARS`)/{
 #			i\
