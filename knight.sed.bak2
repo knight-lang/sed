@@ -369,22 +369,7 @@ bug
 	}
 
 	## PROMPT
-	/0`CUR`fP/{ x
-		N
-
-		# TODO: does `cat` always output empty lines after?
-		/(.*)\nX`END_OF_INPUT`__EOF__/{
-			s//N`PS`\1/ ;# Delete theEOF and add in NULL to the front
-			x
-			s/([0 ].f)P/\1N/g ;# Just replace all `PROMPT` with `NULL`s now that we're at EOF.
-			bnext_nx
-		}
-
-		# Delete trailing `\r`
-		s/`CR`$//
-		s/(.*)\n(.*)/s\2`PS`\1/ ;# add string in
-		bnext
-	}
+	/0`CUR`fP/brun.todo
 
 	## RANDOM
 	/0`CUR`fR/brun.todo
