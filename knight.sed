@@ -31,7 +31,11 @@
 	y/\n/`PS`/  ;# Convert all newlines (which separated the parsed values) to `PS`, the program sep
 
 	## Check to make sure there's actually something to execute.
-	/^  [^f]/q ;# If the very first thing isn't a function, then exit.
+	/^  [^f]/{
+	 	# If the very first thing isn't a function, then exit.
+	 	s/.*/0/
+	 	bEXIT
+	}
 
 	## Get ready for execution
 	s/ /`CUR`/2    ;# Add "current" marker to the first function
@@ -111,6 +115,9 @@ bug
 ===[debug]=== hold space:
 	l;q
 
+:EXIT
+	s/.*/<exit with status &>/p
+	q
 
 ####################################################################################################
 #                                                                                                  #
@@ -135,7 +142,9 @@ bug
 
 	# Check to see if there's a previous thing to run. If not, we're at end of program.
 	#/(.*[0-9])`DFR`/!{s/.*/<END OF PROGRAM>/p;q;}
-	/(.*[0-9])`DFR`/!q
+	/(.*[0-9])`DFR`/!{
+		s/.*/0/;bEXIT
+	}
 
 	# Mark the previous thing as the next thing to run.
 	s//\1`CUR`/
@@ -286,7 +295,10 @@ bug
 
 	## =
 	/2`CUR`f=/{
-		/2(`CUR`f=`PS` )`NXT`(v[a-z_]+`PS` ) /!{s/.*/assigned to non-variable/p;q;}
+		/2(`CUR`f=`PS` )`NXT`(v[a-z_]+`PS` ) /!{
+			s/.*/assigned to non-variable/p
+			s/.*/1/;bEXIT
+		}
 		s//1\1 \2`NXT`/
 		brun
 	}
@@ -402,7 +414,8 @@ bug
 	## QUIT
 	/0`CUR`fQ/{s//a`CUR`fQ/;x;bto_integer
 	}
-	/a`CUR`fQ/{x;s/^([0-9]*).*/<exit with status \1>\n/p;q;}
+	/a`CUR`fQ/{x;s/^([0-9]*).*/\1/;bEXIT
+	}
 
 	## DUMP
 	/0`CUR`fD/{x;H
@@ -484,7 +497,16 @@ bug
 	}
 
 	## ASCII
-	/0`CUR`fA/brun.todo
+	/0`CUR`fA/{
+		x
+		/^i/{s///;tascii.integer
+		}
+		/^s/{s///;tascii.string
+		}
+		s/^(.).*/invalid type for ASCII: \1/p;s/.*/1/;bEXIT
+		bdbg
+		brun.todo
+	}
 
 	## , [ and ]
 	/0`CUR`f[][,]/brun.todo
@@ -586,7 +608,7 @@ bug
 
 ## EVERYTHING ELSE IS A BUG ##
 	s/.*0`CUR`f(.).*/unknown function: \1/p
-	q
+	s/.*/1/;bEXIT
 
 ####################################################################################################
 #                                                                                                  #
@@ -686,3 +708,113 @@ bug
 	x;s/\n.*//;x
 	bnext
 
+
+
+:ascii.integer
+	# Gotta do it all manually
+	s/^9`PS`/s	`PS`/;tnext
+	s/^10`PS`/s\n`PS`/;tnext
+	s/^13`PS`/s`CR``PS`/;tnext
+	s/^32`PS`/s `PS`/;tnext
+	s/^32`PS`/s `PS`/;tnext
+	s/^32`PS`/s `PS`/;tnext
+	s/^33`PS`/s!`PS`/;tnext
+	s/^34`PS`/s"`PS`/;tnext
+	s/^35`PS`/s#`PS`/;tnext
+	s/^36`PS`/s$`PS`/;tnext
+	s/^37`PS`/s%`PS`/;tnext
+	s/^38`PS`/s&`PS`/;tnext
+	s/^39`PS`/s'`PS`/;tnext
+	s/^40`PS`/s(`PS`/;tnext
+	s/^41`PS`/s)`PS`/;tnext
+	s/^42`PS`/s*`PS`/;tnext
+	s/^43`PS`/s+`PS`/;tnext
+	s/^44`PS`/s,`PS`/;tnext
+	s/^45`PS`/s-`PS`/;tnext
+	s/^46`PS`/s.`PS`/;tnext
+	s#^47`PS`#s/`PS`#;tnext
+	s/^48`PS`/s0`PS`/;tnext
+	s/^49`PS`/s1`PS`/;tnext
+	s/^50`PS`/s2`PS`/;tnext
+	s/^51`PS`/s3`PS`/;tnext
+	s/^52`PS`/s4`PS`/;tnext
+	s/^53`PS`/s5`PS`/;tnext
+	s/^54`PS`/s6`PS`/;tnext
+	s/^55`PS`/s7`PS`/;tnext
+	s/^56`PS`/s8`PS`/;tnext
+	s/^57`PS`/s9`PS`/;tnext
+	s/^58`PS`/s:`PS`/;tnext
+	s/^59`PS`/s;`PS`/;tnext
+	s/^60`PS`/s<`PS`/;tnext
+	s/^61`PS`/s=`PS`/;tnext
+	s/^62`PS`/s>`PS`/;tnext
+	s/^63`PS`/s?`PS`/;tnext
+	s/^64`PS`/s@`PS`/;tnext
+	s/^65`PS`/sA`PS`/;tnext
+	s/^66`PS`/sB`PS`/;tnext
+	s/^67`PS`/sC`PS`/;tnext
+	s/^68`PS`/sD`PS`/;tnext
+	s/^69`PS`/sE`PS`/;tnext
+	s/^70`PS`/sF`PS`/;tnext
+	s/^71`PS`/sG`PS`/;tnext
+	s/^72`PS`/sH`PS`/;tnext
+	s/^73`PS`/sI`PS`/;tnext
+	s/^74`PS`/sJ`PS`/;tnext
+	s/^75`PS`/sK`PS`/;tnext
+	s/^76`PS`/sL`PS`/;tnext
+	s/^77`PS`/sM`PS`/;tnext
+	s/^78`PS`/sN`PS`/;tnext
+	s/^79`PS`/sO`PS`/;tnext
+	s/^80`PS`/sP`PS`/;tnext
+	s/^81`PS`/sQ`PS`/;tnext
+	s/^82`PS`/sR`PS`/;tnext
+	s/^83`PS`/sS`PS`/;tnext
+	s/^84`PS`/sT`PS`/;tnext
+	s/^85`PS`/sU`PS`/;tnext
+	s/^86`PS`/sV`PS`/;tnext
+	s/^87`PS`/sW`PS`/;tnext
+	s/^88`PS`/sX`PS`/;tnext
+	s/^89`PS`/sY`PS`/;tnext
+	s/^90`PS`/sZ`PS`/;tnext
+	s/^91`PS`/s[`PS`/;tnext
+	s/^92`PS`/s\\`PS`/;tnext
+	s/^93`PS`/s]`PS`/;tnext
+	s/^94`PS`/s^`PS`/;tnext
+	s/^95`PS`/s_`PS`/;tnext
+	s/^96`PS`/s``PS`/;tnext
+	s/^97`PS`/sa`PS`/;tnext
+	s/^98`PS`/sb`PS`/;tnext
+	s/^99`PS`/sc`PS`/;tnext
+	s/^100`PS`/sd`PS`/;tnext
+	s/^101`PS`/se`PS`/;tnext
+	s/^102`PS`/sf`PS`/;tnext
+	s/^103`PS`/sg`PS`/;tnext
+	s/^104`PS`/sh`PS`/;tnext
+	s/^105`PS`/si`PS`/;tnext
+	s/^106`PS`/sj`PS`/;tnext
+	s/^107`PS`/sk`PS`/;tnext
+	s/^108`PS`/sl`PS`/;tnext
+	s/^109`PS`/sm`PS`/;tnext
+	s/^110`PS`/sn`PS`/;tnext
+	s/^111`PS`/so`PS`/;tnext
+	s/^112`PS`/sp`PS`/;tnext
+	s/^113`PS`/sq`PS`/;tnext
+	s/^114`PS`/sr`PS`/;tnext
+	s/^115`PS`/ss`PS`/;tnext
+	s/^116`PS`/st`PS`/;tnext
+	s/^117`PS`/su`PS`/;tnext
+	s/^118`PS`/sv`PS`/;tnext
+	s/^119`PS`/sw`PS`/;tnext
+	s/^120`PS`/sx`PS`/;tnext
+	s/^121`PS`/sy`PS`/;tnext
+	s/^122`PS`/sz`PS`/;tnext
+	s/^123`PS`/s{`PS`/;tnext
+	s/^124`PS`/s|`PS`/;tnext
+	s/^125`PS`/s}`PS`/;tnext
+	s/^126`PS`/s~`PS`/;tnext
+
+	s/^([0-9]+).*/invalid ascii ord character found: \1\n/p
+	s/^.*/1/;bEXIT
+
+:ascii.string
+	1d
