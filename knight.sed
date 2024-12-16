@@ -714,7 +714,7 @@ bug
 :ascii.integer
 	# Gotta do it all manually
 	s/^9`PS`/s	`PS`/;tnext
-	s/^10`PS`/s\n`PS`/;tnext
+	s/^10`PS`/s`NL``PS`/;tnext
 	s/^13`PS`/s`CR``PS`/;tnext
 	s/^32`PS`/s `PS`/;tnext
 	s/^33`PS`/s!`PS`/;tnext
@@ -722,7 +722,7 @@ bug
 	s/^35`PS`/s#`PS`/;tnext
 	s/^36`PS`/s$`PS`/;tnext
 	s/^37`PS`/s%`PS`/;tnext
-	s/^38`PS`/s&`PS`/;tnext
+	s/^38`PS`/s\&`PS`/;tnext
 	s/^39`PS`/s'`PS`/;tnext
 	s/^40`PS`/s(`PS`/;tnext
 	s/^41`PS`/s)`PS`/;tnext
@@ -818,7 +818,7 @@ bug
 # NOTE: This expects `t` to be reset
 :ascii.string
 	s/^	[^`PS`]*/i9`PS/;tnext
-	s/^\n[^`PS`]*/i10/;tnext
+	s/^`NL`[^`PS`]*/i10/;tnext
 	s/^`CR`[^`PS`]*/i13/;tnext
 	s/^ [^`PS`]*/i32/;tnext
 	s/^ [^`PS`]*/i32/;tnext
