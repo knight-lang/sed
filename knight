@@ -35,6 +35,8 @@ output=$(< <(printf "%s\nX__END__\n" "$2"; cat 2>/dev/null; printf 'X\x19__EOF__
 		-e 's/\\027/_/g' \
 		-e 's/\\030/`VSEP`/g' \
 		-e 's/\\031/`END_OF_INPUT`/g' \
-| sed -nE '$!d;/X__EXIT_STATUS: ([0-9]+)/{s//\1/p;q;};l'
 )
-exit $output
+printf %s "$output" | sed '$d'
+exit "$(printf %s "$output" | sed -nE '$!d;/X__EXIT_STATUS: ([0-9]+)/{s//\1/p;q;};l')"
+
+#exit $output
