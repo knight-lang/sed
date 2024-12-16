@@ -116,7 +116,7 @@ bug
 	l;q
 
 :EXIT
-	s/.*/<exit with status &>/p
+	s/.*/X__EXIT_STATUS: &/p
 	q
 
 ####################################################################################################
@@ -710,13 +710,12 @@ bug
 
 
 
+# NOTE: This expects `t` to be reset
 :ascii.integer
 	# Gotta do it all manually
 	s/^9`PS`/s	`PS`/;tnext
 	s/^10`PS`/s\n`PS`/;tnext
 	s/^13`PS`/s`CR``PS`/;tnext
-	s/^32`PS`/s `PS`/;tnext
-	s/^32`PS`/s `PS`/;tnext
 	s/^32`PS`/s `PS`/;tnext
 	s/^33`PS`/s!`PS`/;tnext
 	s/^34`PS`/s"`PS`/;tnext
@@ -813,8 +812,112 @@ bug
 	s/^125`PS`/s}`PS`/;tnext
 	s/^126`PS`/s~`PS`/;tnext
 
-	s/^([0-9]+).*/invalid ascii ord character found: \1\n/p
+	s/^([0-9]+).*/invalid ascii ord number found: \1\n/p
 	s/^.*/1/;bEXIT
 
+# NOTE: This expects `t` to be reset
 :ascii.string
-	1d
+	s/^	[^`PS`]*/i9`PS/;tnext
+	s/^\n[^`PS`]*/i10/;tnext
+	s/^`CR`[^`PS`]*/i13/;tnext
+	s/^ [^`PS`]*/i32/;tnext
+	s/^ [^`PS`]*/i32/;tnext
+	s/^ [^`PS`]*/i32/;tnext
+	s/^![^`PS`]*/i33/;tnext
+	s/^"[^`PS`]*/i34/;tnext
+	s/^#[^`PS`]*/i35/;tnext
+	s/^\$[^`PS`]*/i36/;tnext
+	s/^%[^`PS`]*/i37/;tnext
+	s/^&[^`PS`]*/i38/;tnext
+	s/^'[^`PS`]*/i39/;tnext
+	s/^\([^`PS`]*/i40/;tnext
+	s/^\)[^`PS`]*/i41/;tnext
+	s/^\*[^`PS`]*/i42/;tnext
+	s/^\+[^`PS`]*/i43/;tnext
+	s/^,[^`PS`]*/i44/;tnext
+	s/^-[^`PS`]*/i45/;tnext
+	s/^\.[^`PS`]*/i46/;tnext
+	s#^/[^`PS`]*#i47#;tnext
+	s/^0[^`PS`]*/i48/;tnext
+	s/^1[^`PS`]*/i49/;tnext
+	s/^2[^`PS`]*/i50/;tnext
+	s/^3[^`PS`]*/i51/;tnext
+	s/^4[^`PS`]*/i52/;tnext
+	s/^5[^`PS`]*/i53/;tnext
+	s/^6[^`PS`]*/i54/;tnext
+	s/^7[^`PS`]*/i55/;tnext
+	s/^8[^`PS`]*/i56/;tnext
+	s/^9[^`PS`]*/i57/;tnext
+	s/^:[^`PS`]*/i58/;tnext
+	s/^;[^`PS`]*/i59/;tnext
+	s/^<[^`PS`]*/i60/;tnext
+	s/^=[^`PS`]*/i61/;tnext
+	s/^>[^`PS`]*/i62/;tnext
+	s/^\?[^`PS`]*/i63/;tnext
+	s/^@[^`PS`]*/i64/;tnext
+	s/^A[^`PS`]*/i65/;tnext
+	s/^B[^`PS`]*/i66/;tnext
+	s/^C[^`PS`]*/i67/;tnext
+	s/^D[^`PS`]*/i68/;tnext
+	s/^E[^`PS`]*/i69/;tnext
+	s/^F[^`PS`]*/i70/;tnext
+	s/^G[^`PS`]*/i71/;tnext
+	s/^H[^`PS`]*/i72/;tnext
+	s/^I[^`PS`]*/i73/;tnext
+	s/^J[^`PS`]*/i74/;tnext
+	s/^K[^`PS`]*/i75/;tnext
+	s/^L[^`PS`]*/i76/;tnext
+	s/^M[^`PS`]*/i77/;tnext
+	s/^N[^`PS`]*/i78/;tnext
+	s/^O[^`PS`]*/i79/;tnext
+	s/^P[^`PS`]*/i80/;tnext
+	s/^Q[^`PS`]*/i81/;tnext
+	s/^R[^`PS`]*/i82/;tnext
+	s/^S[^`PS`]*/i83/;tnext
+	s/^T[^`PS`]*/i84/;tnext
+	s/^U[^`PS`]*/i85/;tnext
+	s/^V[^`PS`]*/i86/;tnext
+	s/^W[^`PS`]*/i87/;tnext
+	s/^X[^`PS`]*/i88/;tnext
+	s/^Y[^`PS`]*/i89/;tnext
+	s/^Z[^`PS`]*/i90/;tnext
+	s/^\[[^`PS`]*/i91/;tnext
+	s/^\\[^`PS`]*/i92/;tnext
+	s/^][^`PS`]*/i93/;tnext
+	s/^\^[^`PS`]*/i94/;tnext
+	s/^_[^`PS`]*/i95/;tnext
+	s/^`[^`PS`]*/i96/;tnext
+	s/^a[^`PS`]*/i97/;tnext
+	s/^b[^`PS`]*/i98/;tnext
+	s/^c[^`PS`]*/i99/;tnext
+	s/^d[^`PS`]*/i100/;tnext
+	s/^e[^`PS`]*/i101/;tnext
+	s/^f[^`PS`]*/i102/;tnext
+	s/^g[^`PS`]*/i103/;tnext
+	s/^h[^`PS`]*/i104/;tnext
+	s/^i[^`PS`]*/i105/;tnext
+	s/^j[^`PS`]*/i106/;tnext
+	s/^k[^`PS`]*/i107/;tnext
+	s/^l[^`PS`]*/i108/;tnext
+	s/^m[^`PS`]*/i109/;tnext
+	s/^n[^`PS`]*/i110/;tnext
+	s/^o[^`PS`]*/i111/;tnext
+	s/^p[^`PS`]*/i112/;tnext
+	s/^q[^`PS`]*/i113/;tnext
+	s/^r[^`PS`]*/i114/;tnext
+	s/^s[^`PS`]*/i115/;tnext
+	s/^t[^`PS`]*/i116/;tnext
+	s/^u[^`PS`]*/i117/;tnext
+	s/^v[^`PS`]*/i118/;tnext
+	s/^w[^`PS`]*/i119/;tnext
+	s/^x[^`PS`]*/i120/;tnext
+	s/^y[^`PS`]*/i121/;tnext
+	s/^z[^`PS`]*/i122/;tnext
+	s/^\{[^`PS`]*/i123/;tnext
+	s/^\|[^`PS`]*/i124/;tnext
+	s/^\}[^`PS`]*/i125/;tnext
+	s/^~[^`PS`]*/i126/;tnext
+
+	s/^(.).*/invalid ascii chr character found: \1\n/p
+	s/^.*/1/;bEXIT
+

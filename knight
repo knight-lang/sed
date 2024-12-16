@@ -15,7 +15,7 @@
 # the `PROMPT` command access it too.
 
 # TODO: `cat`won't print out a newline on its own.
-< <(printf "%s\nX__END__\n" "$2"; cat; printf 'X\x19__EOF__') \
+output=$(< <(printf "%s\nX__END__\n" "$2"; cat 2>/dev/null; printf 'X\x19__EOF__') \
 	sed -nEf =(cat ./knight.sed | sed \
 	-e $'s/`VARS`/\x12/g' \
 	-e $'s/`NL`/\x13/g' \
@@ -34,31 +34,7 @@
 		-e 's/\\026/C/g' \
 		-e 's/\\027/_/g' \
 		-e 's/\\030/`VSEP`/g' \
-		-e 's/\\031/`END_OF_INPUT`/g'
-
-exit
-
-[ $# = 0 ] && set -- -e $'   #hel \tlo\n  #  hi\n
-#; O + 1 2 O 3
-# ; OUTPUT (; & 0 1 "A") OUTPUT 3
-; = foo 3
-; = bar 4
-; = bar 9
-O + foo bar
-; = ateb 4
-O - 2 ateb
-# ; = alpha 3
-# D alpha
-# ; O 3 O + 19 TRUE
-
-
-# + 1 O & + 1 2 O F
-# O ; 3 O + 19 TRUE
-
-# ; O ! 123 O ~ "   12 34"\n__END__
-#; O ! 123 O ~ "   12 34"
-#; O 1 O !2
-#3 O ~"  12"
-#O 12
-#O "1''\\'$'"
-';
+		-e 's/\\031/`END_OF_INPUT`/g' \
+| sed -nE '$!d;/X__EXIT_STATUS: ([0-9]+)/{s//\1/p;q;};l'
+)
+exit $output
