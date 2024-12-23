@@ -113,7 +113,9 @@ bug
 	l;x
 	i\
 ===[debug]=== hold space:
-	l;q
+	l
+	s/.*/2/
+	# FALLTHROUGH
 
 :EXIT
 	s/.*/X__EXIT_STATUS: &/p
@@ -504,8 +506,6 @@ bug
 		/^s/{s///;tascii.string
 		}
 		s/^(.).*/invalid type for ASCII: \1/p;s/.*/1/;bEXIT
-		bdbg
-		brun.todo
 	}
 
 	## , [ and ]
@@ -558,7 +558,35 @@ bug
 	/0`CUR`f[*/%^<>]/brun.todo
 
 	## ?
-	/0`CUR`f\?/brun.todo
+	/0`CUR`f\?/{x
+		/^a/brun.todo
+		H
+		s/^([^`PS`]*`PS`[^`PS`]*).*/\1/
+
+		/^T`PS`T$/brun.EQUALS.true
+		/^F`PS`F$/brun.EQUALS.true
+		/^N`PS`N$/brun.EQUALS.true
+		/^[TFN]$/brun.EQUALS.false
+
+		/^i(.*)`PS`[^i]$/brun.EQUALS.false
+		/^s(.*)`PS`[^s]$/brun.EQUALS.false
+
+		s/^a(.*`PS`)a/\1/;trun.todo
+
+		bequals.start
+
+	:run.EQUALS.true
+		s/^.*/T/
+		bdbg
+	:run.EQUALS.false
+		G
+		#s/\n/__TMP__/2
+		#s/.*__TMP__[^`PS`]*`PS`[^`PS`]*/T/
+		x
+		s/.*//
+		#s/^.*__TMP__/F/
+		bdbg
+	}
 
 	## =
 	/0`CUR`f=/{
@@ -626,19 +654,20 @@ bug
 	/^a/bdbg
 	s/^T/true/
 	s/^F/false/
-	s/^N/null/; # TODO: MAKE EMPTY
-	s/^[is]//
+	s/^[Nis]//
 	x
 	brun.function.zero-arity
 
 :to_boolean
 	/^a/bdbg
 	s/^([sN]|i0)`PS`/F`PS`/
-	s/^[is][^|]*/T`PS`/
+	s/^[is][^`PS`]*/T/
+
+	## ASSERTION: make sure it actually worked
 	/^[TF]/!{s/^/somehow to_boolean failed/;bug
 	}
-	x
-	brun.function.zero-arity
+
+	x;brun.function.zero-arity
 
 :to_integer
 	/^a/bdbg
@@ -921,3 +950,108 @@ bug
 	s/^(.).*/invalid ascii chr character found: \1\n/p
 	s/^.*/1/;bEXIT
 
+
+:equals.start
+#l
+#q
+	s/^$//;bequals
+:equals
+	/^`PS`$/brun.EQUALS.true
+
+	# HEYO, no backreferences lol
+	s/^ ([^`PS`]*`PS`) /\1/;tequals
+	s/^!([^`PS`]*`PS`)!/\1/;tequals
+	s/^"([^`PS`]*`PS`)"/\1/;tequals
+	s/^#([^`PS`]*`PS`)#/\1/;tequals
+	s/^\$([^`PS`]*`PS`)\$/\1/;tequals
+	s/^%([^`PS`]*`PS`)%/\1/;tequals
+	s/^&([^`PS`]*`PS`)&/\1/;tequals
+	s/^'([^`PS`]*`PS`)'/\1/;tequals
+	s/^\(([^`PS`]*`PS`)\(/\1/;tequals
+	s/^)([^`PS`]*`PS`))/\1/;tequals
+	s/^\*([^`PS`]*`PS`)\*/\1/;tequals
+	s/^\+([^`PS`]*`PS`)\+/\1/;tequals
+	s/^,([^`PS`]*`PS`),/\1/;tequals
+	s/^-([^`PS`]*`PS`)-/\1/;tequals
+	s/^\.([^`PS`]*`PS`)\./\1/;tequals
+	s#^/([^`PS`]*`PS`)/##;tequals
+	s/^0([^`PS`]*`PS`)0/\1/;tequals
+	s/^1([^`PS`]*`PS`)1/\1/;tequals
+	s/^2([^`PS`]*`PS`)2/\1/;tequals
+	s/^3([^`PS`]*`PS`)3/\1/;tequals
+	s/^4([^`PS`]*`PS`)4/\1/;tequals
+	s/^5([^`PS`]*`PS`)5/\1/;tequals
+	s/^6([^`PS`]*`PS`)6/\1/;tequals
+	s/^7([^`PS`]*`PS`)7/\1/;tequals
+	s/^8([^`PS`]*`PS`)8/\1/;tequals
+	s/^9([^`PS`]*`PS`)9/\1/;tequals
+	s/^:([^`PS`]*`PS`):/\1/;tequals
+	s/^;([^`PS`]*`PS`);/\1/;tequals
+	s/^<([^`PS`]*`PS`)</\1/;tequals
+	s/^=([^`PS`]*`PS`)=/\1/;tequals
+	s/^>([^`PS`]*`PS`)>/\1/;tequals
+	s/^\?([^`PS`]*`PS`)\?/\1/;tequals
+	s/^@([^`PS`]*`PS`)@/\1/;tequals
+	s/^A([^`PS`]*`PS`)A/\1/;tequals
+	s/^B([^`PS`]*`PS`)B/\1/;tequals
+	s/^C([^`PS`]*`PS`)C/\1/;tequals
+	s/^D([^`PS`]*`PS`)D/\1/;tequals
+	s/^E([^`PS`]*`PS`)E/\1/;tequals
+	s/^F([^`PS`]*`PS`)F/\1/;tequals
+	s/^G([^`PS`]*`PS`)G/\1/;tequals
+	s/^H([^`PS`]*`PS`)H/\1/;tequals
+	s/^I([^`PS`]*`PS`)I/\1/;tequals
+	s/^J([^`PS`]*`PS`)J/\1/;tequals
+	s/^K([^`PS`]*`PS`)K/\1/;tequals
+	s/^L([^`PS`]*`PS`)L/\1/;tequals
+	s/^M([^`PS`]*`PS`)M/\1/;tequals
+	s/^N([^`PS`]*`PS`)N/\1/;tequals
+	s/^O([^`PS`]*`PS`)O/\1/;tequals
+	s/^P([^`PS`]*`PS`)P/\1/;tequals
+	s/^Q([^`PS`]*`PS`)Q/\1/;tequals
+	s/^R([^`PS`]*`PS`)R/\1/;tequals
+	s/^S([^`PS`]*`PS`)S/\1/;tequals
+	s/^T([^`PS`]*`PS`)T/\1/;tequals
+	s/^U([^`PS`]*`PS`)U/\1/;tequals
+	s/^V([^`PS`]*`PS`)V/\1/;tequals
+	s/^W([^`PS`]*`PS`)W/\1/;tequals
+	s/^X([^`PS`]*`PS`)X/\1/;tequals
+	s/^Y([^`PS`]*`PS`)Y/\1/;tequals
+	s/^Z([^`PS`]*`PS`)Z/\1/;tequals
+	s/^\[([^`PS`]*`PS`)\[/\1/;tequals
+	s/^\\([^`PS`]*`PS`)\\/\1/;tequals
+	s/^]([^`PS`]*`PS`)]/\1/;tequals
+	s/^\^([^`PS`]*`PS`)\^/\1/;tequals
+	s/^_([^`PS`]*`PS`)_/\1/;tequals
+	s/^`([^`PS`]*`PS`)`/\1/;tequals
+	s/^a([^`PS`]*`PS`)a/\1/;tequals
+	s/^b([^`PS`]*`PS`)b/\1/;tequals
+	s/^c([^`PS`]*`PS`)c/\1/;tequals
+	s/^d([^`PS`]*`PS`)d/\1/;tequals
+	s/^e([^`PS`]*`PS`)e/\1/;tequals
+	s/^f([^`PS`]*`PS`)f/\1/;tequals
+	s/^g([^`PS`]*`PS`)g/\1/;tequals
+	s/^h([^`PS`]*`PS`)h/\1/;tequals
+	s/^i([^`PS`]*`PS`)i/\1/;tequals
+	s/^j([^`PS`]*`PS`)j/\1/;tequals
+	s/^k([^`PS`]*`PS`)k/\1/;tequals
+	s/^l([^`PS`]*`PS`)l/\1/;tequals
+	s/^m([^`PS`]*`PS`)m/\1/;tequals
+	s/^n([^`PS`]*`PS`)n/\1/;tequals
+	s/^o([^`PS`]*`PS`)o/\1/;tequals
+	s/^p([^`PS`]*`PS`)p/\1/;tequals
+	s/^q([^`PS`]*`PS`)q/\1/;tequals
+	s/^r([^`PS`]*`PS`)r/\1/;tequals
+	s/^s([^`PS`]*`PS`)s/\1/;tequals
+	s/^t([^`PS`]*`PS`)t/\1/;tequals
+	s/^u([^`PS`]*`PS`)u/\1/;tequals
+	s/^v([^`PS`]*`PS`)v/\1/;tequals
+	s/^w([^`PS`]*`PS`)w/\1/;tequals
+	s/^x([^`PS`]*`PS`)x/\1/;tequals
+	s/^y([^`PS`]*`PS`)y/\1/;tequals
+	s/^z([^`PS`]*`PS`)z/\1/;tequals
+	s/^\{([^`PS`]*`PS`)\{/\1/;tequals
+	s/^\|([^`PS`]*`PS`)\|/\1/;tequals
+	s/^}([^`PS`]*`PS`)}/\1/;tequals
+	s/^~([^`PS`]*`PS`)~/\1/;tequals
+	brun.EQUALS.false
